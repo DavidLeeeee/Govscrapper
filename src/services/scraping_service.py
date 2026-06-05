@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from src.services.notification_service import build_new_notice_message, send_google_chat_message
+from src.services.storage_service import (
+    Notice,
+    atomic_write_json,
+    find_new_notices,
+    merge_notices,
+    read_json_list,
+    source_active_path,
+    source_snapshot_dir,
+)
+
+Scraper = Callable[[], list[Notice]]
+
+
+def run_scraping(
+    data_dir: Path,
+    scrapers: dict[str, Scraper],
+    google_chat_webhook_url: str | None = None,
+) -> dict[str, Any]:
+    result: dict[str, Any] = {"sources": {}, "new_count": 0}
+    today = datetime.now().date()
+
+    for source_name, scraper in scrapers.items():
+        scraped_items = scraper()
+        snapshot_dir = source_snapshot_dir(data_dir, source_name, today)
+        atomic_write_json(snapshot_dir / "items.json", scraped_items)
+
+        active_path = source_active_path(data_dir, source_name)
+        existing_items = read_json_list(active_path)
+        new_items = find_new_notices(existing_items, scraped_items)
+        merged_items = merge_notices(existing_items, scraped_items)
+        atomic_write_json(active_path, merged_items)
+
+        result["sources"][source_name] = {
+            "scraped_count": len(scraped_items),
+            "new_count": len(new_items),
+        }
+        result["new_count"] += len(new_items)
+
+        if new_items and google_chat_webhook_url:
+            message = build_new_notice_message(new_items)
+            send_google_chat_message(google_chat_webhook_url, message)
+
+    return result
