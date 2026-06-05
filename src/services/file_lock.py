@@ -1,3 +1,6 @@
+"""cron/수동 실행 작업이 동시에 돌지 않도록 파일 lock을 제공한다.
+오래된 lock은 비정상 종료 흔적으로 보고 제거할 수 있다."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

@@ -1,10 +1,12 @@
+"""신규 공고 목록을 외부 알림 메시지로 변환한다.
+현재는 Google Chat Incoming Webhook 전송만 담당한다."""
+
 from __future__ import annotations
 
-from typing import Any
 from urllib import request
 import json
 
-Notice = dict[str, Any]
+from src.contracts.notice import Notice
 
 
 def build_new_notice_message(notices: list[Notice]) -> str:

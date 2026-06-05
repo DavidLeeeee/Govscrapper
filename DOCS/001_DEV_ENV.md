@@ -9,3 +9,5 @@
 - uv 0.9.5: Python 프로젝트/의존성 관리
 - FastAPI 0.136.3 이상: 웹 API 서버
 - Uvicorn 0.49.0 이상: ASGI 서버 실행
+- requests 2.34.2 이상: HTTP 요청 기반 스크래핑
+- beautifulsoup4 4.14.3 이상: HTML 파싱

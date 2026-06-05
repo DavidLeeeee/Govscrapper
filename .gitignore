@@ -13,6 +13,8 @@ wheels/
 data/**
 !data/
 !data/.gitkeep
+!data/marked/
+!data/marked/.gitkeep
 runtime/**
 !runtime/
 !runtime/.gitkeep

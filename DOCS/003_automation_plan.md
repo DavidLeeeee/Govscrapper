@@ -35,13 +35,13 @@ app/
     scraping_service.py
     storage_service.py
     notification_service.py
-    cleanup_service.py
+    align_service.py
   scrapers/
     bizinfo.py
 
 scripts/
   run_scraping.py
-  cleanup_expired.py
+  align_expired.py
 
 data/
   sources/
@@ -58,10 +58,10 @@ runtime/
 | `app/services/scraping_service.py` | 전체 스크래핑 실행 흐름 관리 |
 | `app/services/storage_service.py` | 파일 저장, 병합, 중복 제거 |
 | `app/services/notification_service.py` | Google Chat 등 외부 알림 전송 |
-| `app/services/cleanup_service.py` | 마감 공고 정리 |
+| `app/services/align_service.py` | active/expired 공고 정렬 |
 | `app/scrapers/` | 사이트별 스크래퍼 |
 | `scripts/run_scraping.py` | cron에서 호출하는 스크래핑 실행 스크립트 |
-| `scripts/cleanup_expired.py` | cron에서 호출하는 마감 정리 스크립트 |
+| `scripts/align_expired.py` | cron에서 호출하는 active/expired 정렬 스크립트 |
 | `data/sources/` | 날짜별 원본 스크래핑 결과 |
 | `data/active/` | 현재 검색 대상 공고 |
 | `data/expired/` | 마감된 공고 |
@@ -79,7 +79,7 @@ runtime/
 매일 자정 직후 마감 공고를 정리한다.
 
 ```cron
-5 0 * * * cd /path/to/project && /path/to/project/.venv/bin/python scripts/cleanup_expired.py
+5 0 * * * cd /path/to/project && /path/to/project/.venv/bin/python scripts/align_expired.py
 ```
 
 실제 서버 경로에 맞게 `/path/to/project`는 수정한다.
@@ -138,7 +138,7 @@ source + title + deadline
 
 ## 마감 공고 정리 흐름
 
-`scripts/cleanup_expired.py`는 다음 흐름으로 동작한다.
+`scripts/align_expired.py`는 다음 흐름으로 동작한다.
 
 1. 중복 실행 방지 lock 획득
 2. `data/active/**/*.json` 탐색
@@ -168,7 +168,7 @@ items.json.tmp 작성
 
 ```text
 runtime/locks/scraping.lock
-runtime/locks/cleanup.lock
+runtime/locks/align.lock
 ```
 
 이미 lock이 존재하면 새 작업은 실행하지 않고 로그만 남긴다.
@@ -183,7 +183,7 @@ runtime/locks/cleanup.lock
 
 ```text
 runtime/logs/scraping.log
-runtime/logs/cleanup.log
+runtime/logs/align.log
 ```
 
 로그에는 다음 내용을 남긴다.

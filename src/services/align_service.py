@@ -1,3 +1,6 @@
+"""active 공고를 기준으로 마감 여부를 다시 정렬한다.
+마감된 공고는 expired 저장소로 이동하고 active에는 유효 공고만 남긴다."""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -5,8 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from src.contracts.notice import Notice
 from src.services.storage_service import (
-    Notice,
     atomic_write_json,
     merge_notices,
     read_json_list,
@@ -15,7 +18,7 @@ from src.services.storage_service import (
 )
 
 
-def cleanup_expired_notices(data_dir: Path) -> dict[str, Any]:
+def align_expired_notices(data_dir: Path) -> dict[str, Any]:
     active_root = data_dir / "active"
     result: dict[str, Any] = {"sources": {}, "expired_count": 0}
 

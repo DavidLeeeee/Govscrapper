@@ -1,3 +1,6 @@
+"""파일 기반 저장소의 공통 읽기/쓰기와 경로 생성을 담당한다.
+공고 병합, 신규 판별, 마감 기준 분리 같은 저장 관련 유틸도 포함한다."""
+
 from __future__ import annotations
 
 import json
@@ -7,7 +10,23 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-Notice = dict[str, Any]
+from src.contracts.notice import Notice
+
+
+def normalize_notice(notice: Notice) -> Notice:
+    return {
+        "source": str(notice.get("source", "")),
+        "title": str(notice.get("title", "")),
+        "url": str(notice.get("url", "")),
+        "posted_at": str(notice.get("posted_at", "")),
+        "deadline": notice.get("deadline"),
+        "scraped_at": str(notice.get("scraped_at", datetime.now().astimezone().isoformat(timespec="seconds"))),
+        "keywords": list(notice.get("keywords", [])),
+    }
+
+
+def normalize_notices(notices: Iterable[Notice]) -> list[Notice]:
+    return [normalize_notice(notice) for notice in notices]
 
 
 def read_json_list(path: Path) -> list[Notice]:
@@ -20,7 +39,7 @@ def read_json_list(path: Path) -> list[Notice]:
     if not isinstance(data, list):
         raise ValueError(f"JSON list 형식이 아닙니다: {path}")
 
-    return data
+    return normalize_notices(data)
 
 
 def atomic_write_json(path: Path, data: Any) -> None:
@@ -43,6 +62,10 @@ def notice_key(notice: Notice) -> tuple[str, str, str]:
     title = str(notice.get("title", ""))
     deadline = str(notice.get("deadline", ""))
     return source, title, deadline
+
+
+def notice_key_string(notice: Notice) -> str:
+    return ":".join(notice_key(notice))
 
 
 def merge_notices(existing: Iterable[Notice], incoming: Iterable[Notice]) -> list[Notice]:
@@ -92,3 +115,7 @@ def source_expired_path(data_dir: Path, source_name: str, year: int) -> Path:
 
 def source_snapshot_dir(data_dir: Path, source_name: str, snapshot_date: date) -> Path:
     return data_dir / "sources" / source_name / snapshot_date.isoformat()
+
+
+def marked_path(data_dir: Path) -> Path:
+    return data_dir / "marked" / "items.json"

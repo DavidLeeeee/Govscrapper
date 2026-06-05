@@ -1,10 +1,12 @@
-from src.services.storage_service import Notice
+from src.scrapers._kisa import KisaBidScraper
+from src.scrapers.scrap_interface import Scraper
 
 
-def scrape_placeholder() -> list[Notice]:
-    return []
-
+SCRAPER_INSTANCES: list[Scraper] = [
+    KisaBidScraper(),
+]
 
 SCRAPERS = {
-    "placeholder": scrape_placeholder,
+    scraper.target.source_name: scraper.scrape
+    for scraper in SCRAPER_INSTANCES
 }
