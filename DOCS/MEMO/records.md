@@ -69,6 +69,7 @@ runtime/
 scripts/
   run_scraping.py
   align_expired.py
+  backfill_iris.py
 
 src/
   api/
@@ -151,6 +152,9 @@ data/marked/items.json
 - `KisaBidScraper`
 - source: `kisa_bid`
 - target URL: `https://www.kisa.or.kr/403?page={page}`
+- `IrisBtinSituScraper`
+- source: `iris_btin_situ`
+- target URL: `https://www.iris.go.kr/contents/retrieveBsnsAncmBtinSituListView.do`
 
 ## KISA 구현 상태
 
@@ -166,6 +170,28 @@ data/marked/items.json
 - 상세 페이지 본문/첨부파일/마감일 파싱은 아직 하지 않음
 
 KISA 상세 페이지는 형식이 일정하지 않아 현재는 `deadline: null`로 저장한다.
+
+## IRIS 구현 상태
+
+파일: `src/scrapers/_iris.py`
+
+현재 구현:
+
+- `requests.Session` 사용
+- `retrieveBsnsAncmBtinSituList.do`에 POST 요청
+- `blngGovdSe[]` 반복 파라미터와 `blngGovdSeArr` pipe 문자열로 부처 코드 필터링
+- 기본 부처 코드는 `AR4001`, `AR4981`
+- 응답의 부처명도 `과학기술정보통신부`, `개인정보보호위원회`인지 한 번 더 필터링
+- 응답의 `listBsnsAncmBtinSitu`를 `Notice`로 변환
+- `ancmDe`를 `posted_at`으로 사용하고 없으면 `rcveStrDe` 사용
+- `rcveEndDe`를 `deadline`으로 사용
+- `YYYY.MM.DD`, `YYYY-MM-DD`를 모두 `YYYY-MM-DD`로 정규화
+
+허용 부처 코드는 `IrisBtinSituScraper(government_codes=(...))`에서 자유롭게 추가/삭제한다.
+
+허용 부처명은 `IrisBtinSituScraper(allowed_government_names=(...))`에서 자유롭게 추가/삭제한다.
+
+`keywords`는 자동 메타데이터 저장소로 쓰지 않고, 현재는 빈 리스트로 둔다.
 
 ## 서비스 계층
 
@@ -222,6 +248,7 @@ runtime/locks/align.lock
 - mark/unmark API 추가
 - Google Chat webhook 환경 변수 연동 확인
 - 최초 1회 backfill 실행 스크립트 추가
+- IRIS backfill은 `scripts/backfill_iris.py`로 실행 가능
 - 다음 사이트 스크래퍼 추가
 
 ## 주의사항
