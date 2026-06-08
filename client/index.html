@@ -7,19 +7,63 @@
     <link rel="stylesheet" href="/static/css/app.css" />
   </head>
   <body>
-    <main class="page">
-      <section class="panel">
-        <p class="eyebrow">Internal Tool</p>
-        <h1>정부지원사업 스크래퍼</h1>
-        <p class="description">
-          스크래핑 결과 조회, 신규 공고 확인, 마감 공고 정리를 위한 내부 도구입니다.
-        </p>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="주요 메뉴">
+        <a class="brand" href="/">
+          <span class="brand-mark">G</span>
+          <span class="brand-text">정부지원사업공고</span>
+        </a>
 
-        <div class="actions">
-          <a class="button primary" href="/api/health">API Health</a>
-          <button class="button" type="button" disabled>공고 목록 준비 중</button>
-        </div>
-      </section>
-    </main>
+        <nav class="nav">
+          <a class="nav-item active" href="#bookmarks" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">★</span>
+            <span>북마크</span>
+          </a>
+          <a class="nav-item" href="#notices">
+            <span class="nav-icon" aria-hidden="true">□</span>
+            <span>공고조회</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="content" aria-label="콘텐츠">
+        <section class="view" data-view="bookmarks">
+          <div class="page-header">
+            <h1>북마크</h1>
+          </div>
+        </section>
+
+        <section class="view" data-view="notices" hidden>
+          <div class="page-header">
+            <div>
+              <h1>공고조회</h1>
+              <p class="page-description">수집된 전체 공고를 사이트별로 확인합니다.</p>
+            </div>
+            <span class="count-badge" id="notice-count">0건</span>
+          </div>
+
+          <div class="filter-bar" aria-label="공고 필터">
+            <button class="filter-chip active" type="button" data-source="all">전체</button>
+          </div>
+
+          <div class="search-panel" aria-label="공고 검색">
+            <div class="search-row">
+              <input
+                class="search-input"
+                id="notice-search"
+                type="search"
+                placeholder="제목으로 검색"
+                autocomplete="off"
+              />
+              <button class="search-action" id="recommended-toggle" type="button">추천검색어</button>
+            </div>
+            <div class="recommended-keywords" id="recommended-keywords" hidden></div>
+          </div>
+
+          <div class="notice-grid" id="notice-grid"></div>
+        </section>
+      </main>
+    </div>
+    <script src="/static/js/app.js"></script>
   </body>
 </html>
