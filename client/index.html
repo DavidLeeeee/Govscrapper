@@ -9,13 +9,13 @@
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="주요 메뉴">
-        <a class="brand" href="/">
+        <a class="brand" href="#home">
           <span class="brand-mark">G</span>
           <span class="brand-text">정부지원사업공고</span>
         </a>
 
         <nav class="nav">
-          <a class="nav-item active" href="#bookmarks" aria-current="page">
+          <a class="nav-item" href="#bookmarks">
             <span class="nav-icon" aria-hidden="true">★</span>
             <span>북마크</span>
           </a>
@@ -38,7 +38,56 @@
       </aside>
 
       <main class="content" aria-label="콘텐츠">
-        <section class="view" data-view="bookmarks">
+        <section class="view" data-view="home">
+          <div class="home-hero">
+            <div>
+              <p class="home-kicker">지원사업 모니터링</p>
+              <h1>놓치기 쉬운 공고를 키워드로 먼저 확인하세요.</h1>
+              <p class="home-copy">관심 단어를 등록하면 현재 지원 가능한 공고 중 해당 단어가 포함된 공고를 홈에서 모아봅니다.</p>
+            </div>
+            <div class="home-alert" id="home-alert">오늘 새로운 공고를 확인하는 중입니다.</div>
+          </div>
+
+          <div class="home-stats">
+            <div class="home-stat">
+              <span>오늘 신규</span>
+              <strong id="today-new-count">0</strong>
+            </div>
+            <div class="home-stat">
+              <span>진행 중</span>
+              <strong id="active-notice-count">0</strong>
+              <small>마감 날짜가 표기되지 않은 공고가 있어 정확하지 않습니다.</small>
+            </div>
+            <div class="home-stat">
+              <span>공유 북마크</span>
+              <strong id="home-bookmark-count">0</strong>
+            </div>
+          </div>
+
+          <section class="follow-panel" aria-label="관심 키워드">
+            <div class="follow-header">
+              <div>
+                <h2>Follow Keywords</h2>
+                <p>이 브라우저에 저장되는 개인 관심 단어입니다.</p>
+              </div>
+              <form class="follow-form" id="follow-form">
+                <input id="follow-input" type="text" placeholder="예: AI" autocomplete="off" />
+                <button type="submit">추가</button>
+              </form>
+            </div>
+            <div class="follow-keywords" id="follow-keywords"></div>
+          </section>
+
+          <section class="home-feed" aria-label="관심 공고">
+            <div class="home-feed-header">
+              <h2>관심 키워드 매칭 공고</h2>
+              <span id="follow-match-count">0건</span>
+            </div>
+            <div class="home-match-list" id="home-match-list"></div>
+          </section>
+        </section>
+
+        <section class="view" data-view="bookmarks" hidden>
           <div class="page-header">
             <h1>북마크</h1>
             <span class="count-badge" id="bookmark-count">0건</span>

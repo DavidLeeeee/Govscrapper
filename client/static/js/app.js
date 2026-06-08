@@ -13,8 +13,18 @@ const noticeSearchClear = document.querySelector("#notice-search-clear");
 const expiredSearch = document.querySelector("#expired-search");
 const expiredSearchClear = document.querySelector("#expired-search-clear");
 const recommendedKeywords = document.querySelector("#recommended-keywords");
+const homeAlert = document.querySelector("#home-alert");
+const todayNewCount = document.querySelector("#today-new-count");
+const activeNoticeCount = document.querySelector("#active-notice-count");
+const homeBookmarkCount = document.querySelector("#home-bookmark-count");
+const followForm = document.querySelector("#follow-form");
+const followInput = document.querySelector("#follow-input");
+const followKeywords = document.querySelector("#follow-keywords");
+const followMatchCount = document.querySelector("#follow-match-count");
+const homeMatchList = document.querySelector("#home-match-list");
 
 const RECOMMENDED_KEYWORDS = ["#AI", "#보안", "#양자", "#R&D", "#클라우드"];
+const FOLLOW_KEYWORDS_STORAGE_KEY = "gov_scrapper_follow_keywords";
 
 const state = {
   notices: [],
@@ -26,12 +36,13 @@ const state = {
   selectedExpiredSource: "all",
   searchQuery: "",
   expiredSearchQuery: "",
+  followKeywords: readFollowKeywords(),
   loadingNotices: false,
   loadedNotices: false,
 };
 
 function setActiveNav() {
-  const currentHash = window.location.hash || "#bookmarks";
+  const currentHash = window.location.hash || "#home";
   const viewName = currentHash.replace("#", "");
 
   for (const item of navItems) {
@@ -50,7 +61,7 @@ function setActiveNav() {
   }
 
   if (
-    (viewName === "notices" || viewName === "bookmarks" || viewName === "expired") &&
+    (viewName === "home" || viewName === "notices" || viewName === "bookmarks" || viewName === "expired") &&
     !state.loadedNotices
   ) {
     loadNotices();
@@ -62,6 +73,10 @@ function setActiveNav() {
 
   if (viewName === "expired") {
     renderExpiredNotices();
+  }
+
+  if (viewName === "home") {
+    renderHome();
   }
 }
 
@@ -118,6 +133,34 @@ if (recommendedKeywords) {
   });
 }
 
+if (followForm && followInput) {
+  followForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const keyword = normalizeKeyword(followInput.value);
+    if (!keyword) {
+      return;
+    }
+
+    state.followKeywords = [...new Set([...state.followKeywords, keyword])];
+    followInput.value = "";
+    writeFollowKeywords();
+    renderHome();
+  });
+}
+
+if (followKeywords) {
+  followKeywords.addEventListener("click", (event) => {
+    const button = event.target.closest(".follow-remove");
+    if (!button) {
+      return;
+    }
+
+    state.followKeywords = state.followKeywords.filter((keyword) => keyword !== button.dataset.keyword);
+    writeFollowKeywords();
+    renderHome();
+  });
+}
+
 async function loadNotices() {
   if (state.loadingNotices) {
     return;
@@ -152,6 +195,7 @@ async function loadNotices() {
     renderFilters();
     renderExpiredFilters();
     renderRecommendedKeywords();
+    renderHome();
     renderNotices();
     renderExpiredNotices();
     renderBookmarks();
@@ -247,7 +291,9 @@ function renderNotices() {
     return;
   }
 
-  noticeGrid.innerHTML = filteredNotices.map(renderNoticeCard).join("");
+  noticeGrid.innerHTML = filteredNotices
+    .map((notice) => renderNoticeCard(notice, { highlightFollow: true }))
+    .join("");
 }
 
 function renderBookmarks() {
@@ -304,6 +350,107 @@ function renderExpiredNotices() {
   expiredGrid.innerHTML = filteredNotices.map(renderNoticeCard).join("");
 }
 
+function renderHome() {
+  if (
+    !homeAlert ||
+    !todayNewCount ||
+    !activeNoticeCount ||
+    !homeBookmarkCount ||
+    !followKeywords ||
+    !followMatchCount ||
+    !homeMatchList
+  ) {
+    return;
+  }
+
+  renderFollowKeywords();
+
+  if (!state.loadedNotices) {
+    homeAlert.textContent = "공고 데이터를 불러오는 중입니다.";
+    homeMatchList.innerHTML = '<p class="home-empty">관심 공고를 불러오는 중입니다.</p>';
+    return;
+  }
+
+  const today = getTodayString();
+  const todayNotices = state.notices.filter((notice) => notice.posted_at === today);
+  const matchedNotices = getFollowMatchedNotices();
+
+  todayNewCount.textContent = String(todayNotices.length);
+  activeNoticeCount.textContent = String(state.notices.length);
+  homeBookmarkCount.textContent = String(state.bookmarks.length);
+  followMatchCount.textContent = `${matchedNotices.length}건`;
+  homeAlert.textContent =
+    todayNotices.length > 0
+      ? `오늘 새로운 공고가 ${todayNotices.length}건 있습니다.`
+      : "오늘 새로 등록된 공고는 아직 없습니다.";
+
+  if (state.followKeywords.length === 0) {
+    homeMatchList.innerHTML = '<p class="home-empty">Follow 단어를 등록하면 관련 공고가 여기에 표시됩니다.</p>';
+    return;
+  }
+
+  if (matchedNotices.length === 0) {
+    homeMatchList.innerHTML = '<p class="home-empty">현재 지원 가능한 공고 중 follow 단어와 매칭되는 항목이 없습니다.</p>';
+    return;
+  }
+
+  homeMatchList.innerHTML = matchedNotices.slice(0, 12).map(renderHomeMatchItem).join("");
+}
+
+function renderFollowKeywords() {
+  if (!followKeywords) {
+    return;
+  }
+
+  if (state.followKeywords.length === 0) {
+    followKeywords.innerHTML = '<span class="follow-placeholder">등록된 단어가 없습니다.</span>';
+    return;
+  }
+
+  followKeywords.innerHTML = state.followKeywords
+    .map(
+      (keyword) => `
+        <button class="follow-chip" type="button">
+          <span>#${escapeHtml(keyword)}</span>
+          <span class="follow-remove" data-keyword="${escapeAttribute(keyword)}" aria-label="${escapeAttribute(keyword)} 삭제">×</span>
+        </button>
+      `,
+    )
+    .join("");
+}
+
+function getFollowMatchedNotices() {
+  const keywords = state.followKeywords.map(normalizeSearchText).filter(Boolean);
+  if (keywords.length === 0) {
+    return [];
+  }
+
+  return state.notices.filter(isFollowMatchedNotice);
+}
+
+function renderHomeMatchItem(notice) {
+  const matchedKeywords = state.followKeywords.filter((keyword) =>
+    normalizeSearchText(`${notice.title} ${(notice.keywords ?? []).join(" ")}`).includes(normalizeSearchText(keyword)),
+  );
+  const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "확인 필요";
+
+  return `
+    <article class="home-match-item">
+      <div class="home-match-main">
+        <div class="home-match-meta">
+          <span>${escapeHtml(notice.source_display_name ?? notice.source)}</span>
+          <span>${escapeHtml(notice.posted_at)}</span>
+          <span>${escapeHtml(deadlineLabel)}</span>
+        </div>
+        <a href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">${escapeHtml(notice.title)}</a>
+      </div>
+      <div class="home-match-tags">
+        ${matchedKeywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
+      </div>
+    </article>
+  `;
+}
+
 function renderRecommendedKeywords() {
   if (!recommendedKeywords) {
     return;
@@ -335,19 +482,21 @@ function updateExpiredSearchClear() {
   expiredSearchClear.hidden = state.expiredSearchQuery.trim() === "";
 }
 
-function renderNoticeCard(notice) {
-  const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "마감일 없음";
-  const deadlineClass = notice.deadline ? "deadline" : "deadline muted";
+function renderNoticeCard(notice, options = {}) {
+  const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "";
+  const deadlineText = notice.deadline ?? "확인 필요";
   const noticeKey = getNoticeKey(notice);
   const markLabel = notice.marked ? "북마크 해제" : "북마크";
   const markClass = notice.marked ? "mark-button marked" : "mark-button";
+  const cardClass =
+    options.highlightFollow && isFollowMatchedNotice(notice) ? "notice-card follow-highlight" : "notice-card";
 
   return `
-    <article class="notice-card" data-notice-key="${escapeAttribute(noticeKey)}">
+    <article class="${cardClass}" data-notice-key="${escapeAttribute(noticeKey)}">
       <div class="notice-card-header">
         <span class="source-pill">${escapeHtml(notice.source_display_name ?? notice.source)}</span>
         <div class="notice-card-actions">
-          <span class="${deadlineClass}">${escapeHtml(deadlineLabel)}</span>
+          ${deadlineLabel ? `<span class="deadline">${escapeHtml(deadlineLabel)}</span>` : ""}
           <button class="${markClass}" type="button" data-mark-key="${escapeAttribute(noticeKey)}" aria-label="${markLabel}" title="${markLabel}">
             ★
           </button>
@@ -365,11 +514,21 @@ function renderNoticeCard(notice) {
         </div>
         <div>
           <dt>마감일</dt>
-          <dd>${escapeHtml(notice.deadline ?? "-")}</dd>
+          <dd>${escapeHtml(deadlineText)}</dd>
         </div>
       </dl>
     </article>
   `;
+}
+
+function isFollowMatchedNotice(notice) {
+  const keywords = state.followKeywords.map(normalizeSearchText).filter(Boolean);
+  if (keywords.length === 0) {
+    return false;
+  }
+
+  const searchable = normalizeSearchText(`${notice.title} ${(notice.keywords ?? []).join(" ")}`);
+  return keywords.some((keyword) => searchable.includes(keyword));
 }
 
 document.addEventListener("click", async (event) => {
@@ -399,7 +558,9 @@ async function toggleNoticeMark(notice) {
   }
   syncBookmarkState(notice);
   renderNotices();
+  renderExpiredNotices();
   renderBookmarks();
+  renderHome();
 
   try {
     const response = await fetch(previousMarked ? "/api/notices/marks/remove" : "/api/notices/marks", {
@@ -419,13 +580,18 @@ async function toggleNoticeMark(notice) {
       notice.marked = true;
       notice.mark = data.mark;
       syncBookmarkState(notice);
+      renderNotices();
+      renderExpiredNotices();
       renderBookmarks();
+      renderHome();
     }
   } catch {
     notice.marked = previousMarked;
     syncBookmarkState(notice);
     renderNotices();
+    renderExpiredNotices();
     renderBookmarks();
+    renderHome();
   }
 }
 
@@ -515,6 +681,36 @@ function normalizeSearchText(value) {
     .replaceAll("#", "")
     .trim()
     .toLocaleLowerCase("ko-KR");
+}
+
+function normalizeKeyword(value) {
+  return String(value ?? "").replaceAll("#", "").trim();
+}
+
+function readFollowKeywords() {
+  try {
+    const raw = localStorage.getItem(FOLLOW_KEYWORDS_STORAGE_KEY);
+    const parsed = JSON.parse(raw ?? "[]");
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.map(normalizeKeyword).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function writeFollowKeywords() {
+  localStorage.setItem(FOLLOW_KEYWORDS_STORAGE_KEY, JSON.stringify(state.followKeywords));
+}
+
+function getTodayString() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getNoticeKey(notice) {
