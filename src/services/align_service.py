@@ -12,27 +12,33 @@ from src.contracts.notice import Notice
 from src.services.storage_service import (
     atomic_write_json,
     merge_notices,
+    notice_expires_at,
     read_json_list,
     source_expired_path,
+    sort_notices,
     split_by_deadline,
 )
 
 
-def align_expired_notices(data_dir: Path) -> dict[str, Any]:
+def align_expired_notices(data_dir: Path, no_deadline_expire_days: int = 60) -> dict[str, Any]:
     active_root = data_dir / "active"
     result: dict[str, Any] = {"sources": {}, "expired_count": 0}
 
     for active_path in active_root.glob("*/items.json"):
         source_name = active_path.parent.name
         notices = read_json_list(active_path)
-        active_items, expired_items = split_by_deadline(notices)
+        active_items, expired_items = split_by_deadline(
+            notices,
+            no_deadline_expire_days=no_deadline_expire_days,
+        )
 
-        atomic_write_json(active_path, active_items)
+        atomic_write_json(active_path, sort_notices(active_items))
 
         expired_by_year: dict[int, list[Notice]] = defaultdict(list)
         for notice in expired_items:
-            deadline = datetime.fromisoformat(str(notice["deadline"])).date()
-            expired_by_year[deadline.year].append(notice)
+            expires_at = notice_expires_at(notice, no_deadline_expire_days)
+            year = (expires_at or datetime.now().date()).year
+            expired_by_year[year].append(notice)
 
         for year, year_items in expired_by_year.items():
             expired_path = source_expired_path(data_dir, source_name, year)

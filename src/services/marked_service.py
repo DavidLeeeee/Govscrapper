@@ -11,12 +11,12 @@ from src.services.storage_service import (
     atomic_write_json,
     marked_path,
     notice_key_string,
-    read_json_list,
+    read_raw_json_list,
 )
 
 
 def list_marked_notices(data_dir: Path) -> list[MarkRecord]:
-    return read_json_list(marked_path(data_dir))
+    return read_raw_json_list(marked_path(data_dir))  # type: ignore[return-value]
 
 
 def mark_notice(data_dir: Path, notice: Notice, marked_by: str, memo: str | None = None) -> MarkRecord:

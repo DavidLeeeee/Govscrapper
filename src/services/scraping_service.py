@@ -19,6 +19,7 @@ from src.services.storage_service import (
     read_json_list,
     source_active_path,
     source_snapshot_dir,
+    sort_notices,
 )
 
 Scraper = Callable[[ScrapeOptions], list[Notice]]
@@ -34,7 +35,7 @@ def run_scraping(
     today = datetime.now().date()
 
     for source_name, scraper in scrapers.items():
-        scraped_items = normalize_notices(scraper(options))
+        scraped_items = sort_notices(normalize_notices(scraper(options)))
         snapshot_dir = source_snapshot_dir(data_dir, source_name, today)
         atomic_write_json(snapshot_dir / "items.json", scraped_items)
 

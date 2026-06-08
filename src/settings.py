@@ -3,6 +3,11 @@ import os
 from pathlib import Path
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -15,6 +20,7 @@ class Settings:
     data_dir: Path = Path("data")
     runtime_dir: Path = Path("runtime")
     google_chat_webhook_url: str | None = None
+    no_deadline_expire_days: int = 60
 
 
 @lru_cache
@@ -25,4 +31,5 @@ def get_settings() -> Settings:
         data_dir=Path(os.getenv("DATA_DIR", "data")),
         runtime_dir=Path(os.getenv("RUNTIME_DIR", "runtime")),
         google_chat_webhook_url=os.getenv("GOOGLE_CHAT_WEBHOOK_URL"),
+        no_deadline_expire_days=int(os.getenv("NO_DEADLINE_EXPIRE_DAYS", "60")),
     )

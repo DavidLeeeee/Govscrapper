@@ -23,6 +23,17 @@
             <span class="nav-icon" aria-hidden="true">□</span>
             <span>공고조회</span>
           </a>
+          <a class="nav-item" href="#expired">
+            <span class="nav-icon" aria-hidden="true">✓</span>
+            <span>마감공고</span>
+          </a>
+        </nav>
+
+        <nav class="nav nav-bottom">
+          <a class="nav-item" href="#help">
+            <span class="nav-icon" aria-hidden="true">?</span>
+            <span>도움말</span>
+          </a>
         </nav>
       </aside>
 
@@ -30,7 +41,9 @@
         <section class="view" data-view="bookmarks">
           <div class="page-header">
             <h1>북마크</h1>
+            <span class="count-badge" id="bookmark-count">0건</span>
           </div>
+          <div class="notice-grid" id="bookmark-grid"></div>
         </section>
 
         <section class="view" data-view="notices" hidden>
@@ -52,15 +65,91 @@
                 class="search-input"
                 id="notice-search"
                 type="search"
-                placeholder="제목으로 검색"
+                placeholder="키워드 검색"
                 autocomplete="off"
               />
-              <button class="search-action" id="recommended-toggle" type="button">추천검색어</button>
+              <button class="search-clear" id="notice-search-clear" type="button" aria-label="검색어 지우기" hidden>
+                ×
+              </button>
             </div>
-            <div class="recommended-keywords" id="recommended-keywords" hidden></div>
+            <div class="recommended-keywords" id="recommended-keywords"></div>
           </div>
 
           <div class="notice-grid" id="notice-grid"></div>
+        </section>
+
+        <section class="view" data-view="expired" hidden>
+          <div class="page-header">
+            <div>
+              <h1>마감공고</h1>
+              <p class="page-description">정리된 과거 공고를 사이트별로 확인합니다.</p>
+            </div>
+            <span class="count-badge" id="expired-count">0건</span>
+          </div>
+
+          <div class="filter-bar" id="expired-filter-bar" aria-label="마감공고 필터">
+            <button class="filter-chip active" type="button" data-source="all">전체</button>
+          </div>
+
+          <div class="search-panel" aria-label="마감공고 검색">
+            <div class="search-row">
+              <input
+                class="search-input"
+                id="expired-search"
+                type="search"
+                placeholder="키워드 검색"
+                autocomplete="off"
+              />
+              <button class="search-clear" id="expired-search-clear" type="button" aria-label="검색어 지우기" hidden>
+                ×
+              </button>
+            </div>
+          </div>
+
+          <div class="notice-grid" id="expired-grid"></div>
+        </section>
+
+        <section class="view" data-view="help" hidden>
+          <div class="page-header">
+            <div>
+              <h1>도움말</h1>
+              <p class="page-description">정부지원사업공고 페이지 사용법입니다.</p>
+            </div>
+          </div>
+
+          <div class="help-panel">
+            <section class="help-section">
+              <span class="help-index">01</span>
+              <div>
+                <h2>공고조회</h2>
+                <p>수집된 공고를 카드 형태로 확인합니다. 상단 필터를 누르면 사이트별 공고만 볼 수 있습니다.</p>
+              </div>
+            </section>
+
+            <section class="help-section">
+              <span class="help-index">02</span>
+              <div>
+                <h2>키워드 검색</h2>
+                <p>검색창에 입력한 키워드는 공고 제목과 비교됩니다. 하단 shortcut 키워드를 누르면 해당 키워드로 바로 검색됩니다.</p>
+              </div>
+            </section>
+
+            <section class="help-section">
+              <span class="help-index">03</span>
+              <div>
+                <h2>공유 북마크</h2>
+                <p>카드의 별 버튼을 누르면 공고가 공유 북마크로 저장됩니다. 공고가 정리된 뒤에도 북마크 탭에서는 모든 사용자가 같은 북마크 목록을 확인합니다.</p>
+              </div>
+            </section>
+
+            <section class="help-section">
+              <span class="help-index">04</span>
+              <div>
+                <h2>마감일 없는 공고</h2>
+                <p>마감일이 없는 공고는 기본적으로 60일 뒤 정리됩니다. 이 기간은 서버 환경값 <code>NO_DEADLINE_EXPIRE_DAYS</code>로 변경합니다.</p>
+              </div>
+            </section>
+          </div>
         </section>
       </main>
     </div>
