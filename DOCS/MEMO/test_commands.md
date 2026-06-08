@@ -31,3 +31,23 @@ uv run python scripts\backfill_iris.py --start-date 2026-05-01 --max-pages 1
 ```powershell
 & 'C:\Users\david\AppData\Local\com.LangflowDesktop\uv\uv.exe' run python scripts\backfill_iris.py --start-date 2026-05-01 --max-pages 1
 ```
+
+## 전체 스크래퍼 넓은 범위 저장 테스트
+
+등록된 모든 스크래퍼를 2026년 5월 1일부터 오늘까지 수집해 저장한다.
+
+```powershell
+uv run python scripts\backfill_all.py
+```
+
+날짜를 바꾸려면 아래처럼 실행한다.
+
+```powershell
+uv run python scripts\backfill_all.py --start-date 2026-05-01 --end-date 2026-06-08
+```
+
+`uv`가 PATH에 잡히지 않으면 아래 명령을 사용한다.
+
+```powershell
+& 'C:\Users\david\AppData\Local\com.LangflowDesktop\uv\uv.exe' run python scripts\backfill_all.py
+```

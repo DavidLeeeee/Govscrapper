@@ -70,6 +70,7 @@ scripts/
   run_scraping.py
   align_expired.py
   backfill_iris.py
+  backfill_all.py
 
 src/
   api/
@@ -158,6 +159,9 @@ data/marked/items.json
 - `NiaBidScraper`
 - source: `nia`
 - target URL: `https://www.nia.or.kr/site/nia_kor/ex/bbs/List.do?cbIdx=78336`
+- `SeoulRndScraper`
+- source: `seoul_rnd`
+- target URL: `https://seoul.rnbd.kr/client/c030100/c030100_00.jsp`
 
 ## KISA 구현 상태
 
@@ -209,6 +213,19 @@ KISA 상세 페이지는 형식이 일정하지 않아 현재는 `deadline: null
 - 목록에서 마감일을 안정적으로 알 수 없으므로 `deadline: null`로 저장
 - 상세 URL을 알 수 없으면 목록 URL fragment fallback 사용
 - NIA는 URL 보정 과정에서 상세 URL이 바뀔 수 있어 중복 기준을 `source + title + posted_at`으로 사용
+
+## Seoul R&D 구현 상태
+
+파일: `src/scrapers/_seoul.py`
+
+현재 구현:
+
+- `requests.Session` 사용
+- `c030100_00.jsp` HTML 페이지 파싱
+- `tr`, `li` 단위로 제목과 모집기간 추출
+- row 기반 파싱 실패 시 텍스트 기반 fallback 사용
+- 모집기간 시작일을 `posted_at`, 종료일을 `deadline`으로 저장
+- 상세 링크를 알 수 없으면 목록 URL fragment fallback 사용
 
 ## 서비스 계층
 
@@ -266,6 +283,7 @@ runtime/locks/align.lock
 - Google Chat webhook 환경 변수 연동 확인
 - 최초 1회 backfill 실행 스크립트 추가
 - IRIS backfill은 `scripts/backfill_iris.py`로 실행 가능
+- 전체 스크래퍼 backfill은 `scripts/backfill_all.py`로 실행 가능
 - 다음 사이트 스크래퍼 추가
 
 ## 주의사항
