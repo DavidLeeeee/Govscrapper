@@ -155,6 +155,9 @@ data/marked/items.json
 - `IrisBtinSituScraper`
 - source: `iris_btin_situ`
 - target URL: `https://www.iris.go.kr/contents/retrieveBsnsAncmBtinSituListView.do`
+- `NiaBidScraper`
+- source: `nia`
+- target URL: `https://www.nia.or.kr/site/nia_kor/ex/bbs/List.do?cbIdx=78336`
 
 ## KISA 구현 상태
 
@@ -192,6 +195,20 @@ KISA 상세 페이지는 형식이 일정하지 않아 현재는 `deadline: null
 허용 부처명은 `IrisBtinSituScraper(allowed_government_names=(...))`에서 자유롭게 추가/삭제한다.
 
 `keywords`는 자동 메타데이터 저장소로 쓰지 않고, 현재는 빈 리스트로 둔다.
+
+## NIA 구현 상태
+
+파일: `src/scrapers/_nia.py`
+
+현재 구현:
+
+- `requests.Session` 사용
+- `List.do?cbIdx=78336&pageIndex={page}` HTML 페이지 파싱
+- `tr`, `li` 단위로 제목 링크와 등록일 추출
+- row 기반 파싱 실패 시 텍스트 기반 fallback 사용
+- 목록에서 마감일을 안정적으로 알 수 없으므로 `deadline: null`로 저장
+- 상세 URL을 알 수 없으면 목록 URL fragment fallback 사용
+- NIA는 URL 보정 과정에서 상세 URL이 바뀔 수 있어 중복 기준을 `source + title + posted_at`으로 사용
 
 ## 서비스 계층
 

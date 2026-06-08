@@ -1,11 +1,13 @@
 from src.scrapers._iris import IrisBtinSituScraper
 from src.scrapers._kisa import KisaBidScraper
+from src.scrapers._nia import NiaBidScraper
 from src.scrapers.scrap_interface import Scraper
 
 
 SCRAPER_INSTANCES: list[Scraper] = [
     IrisBtinSituScraper(),
     KisaBidScraper(),
+    NiaBidScraper(),
 ]
 
 SCRAPERS = {

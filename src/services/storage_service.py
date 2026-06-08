@@ -55,11 +55,16 @@ def atomic_write_json(path: Path, data: Any) -> None:
 
 def notice_key(notice: Notice) -> tuple[str, str, str]:
     source = str(notice.get("source", ""))
+    title = str(notice.get("title", ""))
+    posted_at = str(notice.get("posted_at", ""))
+
+    if source == "nia" and title and posted_at:
+        return source, title, posted_at
+
     url = str(notice.get("url", ""))
     if url:
         return source, "url", url
 
-    title = str(notice.get("title", ""))
     deadline = str(notice.get("deadline", ""))
     return source, title, deadline
 
