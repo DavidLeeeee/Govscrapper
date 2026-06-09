@@ -14,7 +14,7 @@ from src.contracts.notice import Notice
 
 
 def normalize_notice(notice: Notice) -> Notice:
-    return {
+    normalized: Notice = {
         "source": str(notice.get("source", "")),
         "title": str(notice.get("title", "")),
         "url": str(notice.get("url", "")),
@@ -23,6 +23,20 @@ def normalize_notice(notice: Notice) -> Notice:
         "scraped_at": str(notice.get("scraped_at", datetime.now().astimezone().isoformat(timespec="seconds"))),
         "keywords": list(notice.get("keywords", [])),
     }
+
+    if "summary" in notice:
+        summary = notice.get("summary")
+        normalized["summary"] = str(summary).strip() if summary else None
+
+    if "detail_points" in notice:
+        detail_points = notice.get("detail_points") or []
+        normalized["detail_points"] = [str(point).strip() for point in detail_points if str(point).strip()]
+
+    if "detail_fetched_at" in notice:
+        fetched_at = notice.get("detail_fetched_at")
+        normalized["detail_fetched_at"] = str(fetched_at).strip() if fetched_at else None
+
+    return normalized
 
 
 def normalize_notices(notices: Iterable[Notice]) -> list[Notice]:

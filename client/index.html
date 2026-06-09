@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>정부지원사업 스크래퍼</title>
-    <link rel="stylesheet" href="/static/css/app.css" />
+    <link rel="stylesheet" href="/static/css/app.css?v=detail-modal-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -202,6 +202,19 @@
         </section>
       </main>
     </div>
-    <script src="/static/js/app.js"></script>
+    <div class="notice-modal" id="notice-modal" hidden>
+      <div class="notice-modal-backdrop" data-modal-close></div>
+      <section
+        class="notice-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notice-modal-title"
+        tabindex="-1"
+      >
+        <button class="notice-modal-close" type="button" data-modal-close aria-label="상세 닫기">×</button>
+        <div class="notice-modal-content" id="notice-modal-content"></div>
+      </section>
+    </div>
+    <script src="/static/js/app.js?v=detail-modal-1"></script>
   </body>
 </html>

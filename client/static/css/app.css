@@ -13,6 +13,10 @@ body {
   background: #f6f8fa;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -367,15 +371,23 @@ body {
   font-weight: 800;
 }
 
-.home-match-main a {
+.home-match-title {
+  display: block;
+  padding: 0;
+  border: 0;
+  color: #102a43;
+  background: transparent;
+  font: inherit;
   color: #102a43;
   font-size: 16px;
   font-weight: 800;
   line-height: 1.5;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.home-match-main a:hover {
+.home-match-title:hover {
   color: #1d4ed8;
 }
 
@@ -607,12 +619,20 @@ body {
   line-height: 1.5;
 }
 
-.notice-title a {
+.notice-title button {
+  padding: 0;
+  border: 0;
   color: #102a43;
+  background: transparent;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.notice-title a:hover {
+.notice-title button:hover {
   color: #1d4ed8;
 }
 
@@ -651,6 +671,186 @@ body {
   color: #627d98;
   background: #ffffff;
   font-size: 14px;
+}
+
+.notice-modal[hidden] {
+  display: none;
+}
+
+.notice-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.notice-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 42, 67, 0.48);
+}
+
+.notice-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow-y: auto;
+  padding: 28px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(16, 42, 67, 0.28);
+}
+
+.notice-modal-panel:focus {
+  outline: none;
+}
+
+.notice-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  color: #52616f;
+  background: #eef2f6;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.notice-modal-close:hover {
+  color: #102a43;
+  background: #dde6ef;
+}
+
+.notice-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-right: 48px;
+}
+
+.notice-detail-header .source-pill {
+  max-width: 100%;
+}
+
+.notice-detail-content,
+.notice-modal-content {
+  color: #243b53;
+}
+
+.notice-modal-content h2 {
+  margin: 16px 48px 18px 0;
+  color: #102a43;
+  font-size: 24px;
+  line-height: 1.45;
+}
+
+.notice-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 22px;
+}
+
+.notice-detail-meta div {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f6f8fa;
+}
+
+.notice-detail-meta dt,
+.notice-detail-meta dd {
+  margin: 0;
+  font-size: 13px;
+}
+
+.notice-detail-meta dt {
+  color: #829ab1;
+  font-weight: 800;
+}
+
+.notice-detail-meta dd {
+  margin-top: 6px;
+  color: #243b53;
+  font-weight: 800;
+}
+
+.notice-detail-section {
+  padding: 20px 0;
+  border-top: 1px solid #e6edf3;
+}
+
+.notice-detail-section h3 {
+  margin: 0 0 10px;
+  color: #102a43;
+  font-size: 15px;
+}
+
+.notice-detail-section p {
+  margin: 0;
+  color: #334e68;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.notice-detail-points {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: #334e68;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.notice-detail-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.notice-detail-keywords span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #0f766e;
+  background: #dff5f1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.notice-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.notice-origin-link {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 7px;
+  color: #ffffff;
+  background: #1d4ed8;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.notice-origin-link:hover {
+  background: #1e40af;
 }
 
 .help-panel {
@@ -782,6 +982,24 @@ body {
   .notice-card {
     min-height: 210px;
     padding: 20px;
+  }
+
+  .notice-modal {
+    padding: 12px;
+  }
+
+  .notice-modal-panel {
+    max-height: calc(100vh - 24px);
+    padding: 22px;
+  }
+
+  .notice-modal-content h2 {
+    margin-right: 36px;
+    font-size: 20px;
+  }
+
+  .notice-detail-meta {
+    grid-template-columns: 1fr;
   }
 
   .help-section {

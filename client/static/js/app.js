@@ -22,6 +22,9 @@ const followInput = document.querySelector("#follow-input");
 const followKeywords = document.querySelector("#follow-keywords");
 const followMatchCount = document.querySelector("#follow-match-count");
 const homeMatchList = document.querySelector("#home-match-list");
+const noticeModal = document.querySelector("#notice-modal");
+const noticeModalPanel = document.querySelector(".notice-modal-panel");
+const noticeModalContent = document.querySelector("#notice-modal-content");
 
 const RECOMMENDED_KEYWORDS = ["#AI", "#보안", "#양자", "#R&D", "#클라우드"];
 const FOLLOW_KEYWORDS_STORAGE_KEY = "gov_scrapper_follow_keywords";
@@ -435,14 +438,16 @@ function renderHomeMatchItem(notice) {
   const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "확인 필요";
 
   return `
-    <article class="home-match-item">
+    <article class="home-match-item" data-notice-key="${escapeAttribute(getNoticeKey(notice))}">
       <div class="home-match-main">
         <div class="home-match-meta">
           <span>${escapeHtml(notice.source_display_name ?? notice.source)}</span>
           <span>${escapeHtml(notice.posted_at)}</span>
           <span>${escapeHtml(deadlineLabel)}</span>
         </div>
-        <a href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">${escapeHtml(notice.title)}</a>
+        <button class="home-match-title" type="button" data-detail-key="${escapeAttribute(getNoticeKey(notice))}">
+          ${escapeHtml(notice.title)}
+        </button>
       </div>
       <div class="home-match-tags">
         ${matchedKeywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
@@ -503,9 +508,9 @@ function renderNoticeCard(notice, options = {}) {
         </div>
       </div>
       <h2 class="notice-title">
-        <a href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">
+        <button type="button" data-detail-key="${escapeAttribute(noticeKey)}">
           ${escapeHtml(notice.title)}
-        </a>
+        </button>
       </h2>
       <dl class="notice-meta">
         <div>
@@ -532,6 +537,32 @@ function isFollowMatchedNotice(notice) {
 }
 
 document.addEventListener("click", async (event) => {
+  const detailButton = event.target.closest("[data-detail-key]");
+  if (detailButton) {
+    event.preventDefault();
+    const notice = findNoticeByKey(detailButton.dataset.detailKey);
+    if (notice) {
+      openNoticeModal(notice);
+    }
+    return;
+  }
+
+  const cardLink = event.target.closest(".notice-card a, .home-match-item a");
+  if (cardLink && !cardLink.classList.contains("notice-origin-link")) {
+    event.preventDefault();
+    const card = cardLink.closest("[data-notice-key]");
+    const notice = findNoticeByKey(card?.dataset.noticeKey);
+    if (notice) {
+      openNoticeModal(notice);
+    }
+    return;
+  }
+
+  if (event.target.closest("[data-modal-close]")) {
+    closeNoticeModal();
+    return;
+  }
+
   const button = event.target.closest(".mark-button");
   if (!button) {
     return;
@@ -547,6 +578,102 @@ document.addEventListener("click", async (event) => {
   button.disabled = true;
   await toggleNoticeMark(notice);
 });
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && noticeModal && !noticeModal.hidden) {
+    closeNoticeModal();
+  }
+});
+
+function openNoticeModal(notice) {
+  if (!noticeModal || !noticeModalContent || !noticeModalPanel) {
+    window.open(notice.url, "_blank", "noreferrer");
+    return;
+  }
+
+  noticeModalContent.innerHTML = renderNoticeDetail(notice);
+  noticeModal.hidden = false;
+  document.body.classList.add("modal-open");
+  noticeModalPanel.focus();
+}
+
+function closeNoticeModal() {
+  if (!noticeModal) {
+    return;
+  }
+
+  noticeModal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+function renderNoticeDetail(notice) {
+  const deadlineText = notice.deadline ?? "확인 필요";
+  const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "";
+  const keywords = Array.isArray(notice.keywords) ? notice.keywords.filter(Boolean) : [];
+  const detailPoints = Array.isArray(notice.detail_points) ? notice.detail_points.filter(Boolean) : [];
+  const summary = String(notice.summary ?? "").trim();
+  const fetchedAt = notice.detail_fetched_at ? formatDateTime(notice.detail_fetched_at) : "";
+
+  return `
+    <div class="notice-detail-header">
+      <span class="source-pill">${escapeHtml(notice.source_display_name ?? notice.source)}</span>
+      ${deadlineLabel ? `<span class="deadline">${escapeHtml(deadlineLabel)}</span>` : ""}
+    </div>
+    <h2 id="notice-modal-title">${escapeHtml(notice.title)}</h2>
+    <dl class="notice-detail-meta">
+      <div>
+        <dt>등록일</dt>
+        <dd>${escapeHtml(notice.posted_at)}</dd>
+      </div>
+      <div>
+        <dt>마감일</dt>
+        <dd>${escapeHtml(deadlineText)}</dd>
+      </div>
+      ${
+        fetchedAt
+          ? `<div>
+              <dt>상세 수집</dt>
+              <dd>${escapeHtml(fetchedAt)}</dd>
+            </div>`
+          : ""
+      }
+    </dl>
+    <section class="notice-detail-section">
+      <h3>요약</h3>
+      <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
+    </section>
+    ${
+      detailPoints.length > 0
+        ? `<section class="notice-detail-section">
+            <h3>핵심 내용</h3>
+            <ul class="notice-detail-points">
+              ${detailPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
+            </ul>
+          </section>`
+        : ""
+    }
+    ${
+      keywords.length > 0
+        ? `<div class="notice-detail-keywords">
+            ${keywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
+          </div>`
+        : ""
+    }
+    <div class="notice-detail-actions">
+      <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
+    </div>
+  `;
+}
+
+function buildFallbackSummary(notice) {
+  const source = notice.source_display_name ?? notice.source;
+  const deadlineText = notice.deadline ?? "확인 필요";
+  return `${source}에서 수집한 공고입니다. 상세 요약은 아직 수집되지 않았으며, 등록일은 ${notice.posted_at}, 마감일은 ${deadlineText}입니다. 원문 공고에서 지원 대상과 신청 방법을 확인하세요.`;
+}
+
+function findNoticeByKey(key) {
+  return [...state.notices, ...state.expiredNotices, ...state.bookmarks].find((item) => getNoticeKey(item) === key);
+}
 
 async function toggleNoticeMark(notice) {
   const key = getNoticeKey(notice);
@@ -711,6 +838,21 @@ function getTodayString() {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getNoticeKey(notice) {

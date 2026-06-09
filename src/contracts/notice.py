@@ -11,6 +11,9 @@ class Notice(TypedDict):
     deadline: str | None
     scraped_at: str
     keywords: list[str]
+    summary: NotRequired[str | None]
+    detail_points: NotRequired[list[str]]
+    detail_fetched_at: NotRequired[str | None]
     marked: NotRequired[bool]
     mark: NotRequired[dict[str, Any]]
 
