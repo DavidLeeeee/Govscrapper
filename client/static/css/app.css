@@ -543,6 +543,18 @@ body.modal-open {
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
 }
 
+.notice-card.today-highlight {
+  border-color: #f6d98f;
+  box-shadow: 0 8px 22px rgba(180, 83, 9, 0.08);
+}
+
+.notice-card.follow-highlight.today-highlight {
+  border-color: #f59e0b;
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.1),
+    0 8px 22px rgba(180, 83, 9, 0.08);
+}
+
 .notice-card-header {
   display: flex;
   align-items: center;
@@ -661,6 +673,15 @@ body.modal-open {
 .notice-meta dd {
   color: #334e68;
   font-weight: 700;
+}
+
+.notice-meta dd.posted-today {
+  width: fit-content;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 5px;
+  color: #334e68;
+  background: #fff7db;
 }
 
 .empty-state {

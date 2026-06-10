@@ -495,8 +495,14 @@ function renderNoticeCard(notice, options = {}) {
   const noticeKey = getNoticeKey(notice);
   const markLabel = notice.marked ? "북마크 해제" : "북마크";
   const markClass = notice.marked ? "mark-button marked" : "mark-button";
-  const cardClass =
-    options.highlightFollow && isFollowMatchedNotice(notice) ? "notice-card follow-highlight" : "notice-card";
+  const cardClasses = ["notice-card"];
+  if (options.highlightFollow && isFollowMatchedNotice(notice)) {
+    cardClasses.push("follow-highlight");
+  }
+  if (notice.posted_at === getTodayString()) {
+    cardClasses.push("today-highlight");
+  }
+  const cardClass = cardClasses.join(" ");
 
   return `
     <article class="${cardClass}" data-notice-key="${escapeAttribute(noticeKey)}">
@@ -517,7 +523,7 @@ function renderNoticeCard(notice, options = {}) {
       <dl class="notice-meta">
         <div>
           <dt>등록일</dt>
-          <dd>${escapeHtml(notice.posted_at)}</dd>
+          <dd class="${notice.posted_at === getTodayString() ? "posted-today" : ""}">${escapeHtml(notice.posted_at)}</dd>
         </div>
         <div>
           <dt>${escapeHtml(deadlineTerm)}</dt>
