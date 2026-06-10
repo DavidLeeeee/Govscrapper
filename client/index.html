@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>정부지원사업 스크래퍼</title>
-    <link rel="stylesheet" href="/static/css/app.css?v=search-toolbar-1" />
+    <link rel="stylesheet" href="/static/css/app.css?v=notices-redesign-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -110,7 +110,7 @@
           <div class="notice-grid" id="bookmark-grid"></div>
         </section>
 
-        <section class="view" data-view="notices" hidden>
+        <section class="view notices-view" data-view="notices" hidden>
           <div class="page-header">
             <div>
               <h1>공고조회</h1>
@@ -119,29 +119,31 @@
             <span class="count-badge" id="notice-count">0건</span>
           </div>
 
-          <div class="filter-bar" aria-label="공고 필터">
-            <button class="filter-chip active" type="button" data-source="all">전체</button>
-          </div>
-
-          <div class="search-panel" aria-label="공고 검색">
-            <div class="search-row">
-              <input
-                class="search-input"
-                id="notice-search"
-                type="search"
-                placeholder="키워드 검색, 공백으로 여러 단어"
-                autocomplete="off"
-              />
-              <button class="search-clear" id="notice-search-clear" type="button" aria-label="검색어 지우기" hidden>
-                ×
-              </button>
+          <div class="notice-command-bar">
+            <div class="filter-bar" aria-label="공고 필터">
+              <button class="filter-chip active" type="button" data-source="all">전체</button>
             </div>
-            <div class="search-shortcuts" aria-label="검색 shortcut">
-              <form class="shortcut-form" id="shortcut-form">
-                <input id="shortcut-input" type="text" placeholder="shortcut 추가" autocomplete="off" />
-                <button type="submit">추가</button>
-              </form>
-              <div class="shortcut-keywords" id="shortcut-keywords"></div>
+
+            <div class="search-panel" aria-label="공고 검색">
+              <div class="search-row">
+                <input
+                  class="search-input"
+                  id="notice-search"
+                  type="search"
+                  placeholder="키워드 검색, 공백으로 여러 단어"
+                  autocomplete="off"
+                />
+                <button class="search-clear" id="notice-search-clear" type="button" aria-label="검색어 지우기" hidden>
+                  ×
+                </button>
+              </div>
+              <div class="search-shortcuts" aria-label="검색 shortcut">
+                <form class="shortcut-form" id="shortcut-form">
+                  <input id="shortcut-input" type="text" placeholder="shortcut 추가" autocomplete="off" />
+                  <button type="submit">추가</button>
+                </form>
+                <div class="shortcut-keywords" id="shortcut-keywords"></div>
+              </div>
             </div>
           </div>
 
@@ -236,6 +238,6 @@
         <div class="notice-modal-content" id="notice-modal-content"></div>
       </section>
     </div>
-    <script src="/static/js/app.js?v=search-toolbar-1"></script>
+    <script src="/static/js/app.js?v=notices-redesign-1"></script>
   </body>
 </html>
