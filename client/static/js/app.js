@@ -12,7 +12,9 @@ const noticeSearch = document.querySelector("#notice-search");
 const noticeSearchClear = document.querySelector("#notice-search-clear");
 const expiredSearch = document.querySelector("#expired-search");
 const expiredSearchClear = document.querySelector("#expired-search-clear");
-const recommendedKeywords = document.querySelector("#recommended-keywords");
+const shortcutForm = document.querySelector("#shortcut-form");
+const shortcutInput = document.querySelector("#shortcut-input");
+const shortcutKeywords = document.querySelector("#shortcut-keywords");
 const homeAlert = document.querySelector("#home-alert");
 const todayNewCount = document.querySelector("#today-new-count");
 const activeNoticeCount = document.querySelector("#active-notice-count");
@@ -22,12 +24,14 @@ const followInput = document.querySelector("#follow-input");
 const followKeywords = document.querySelector("#follow-keywords");
 const followMatchCount = document.querySelector("#follow-match-count");
 const homeMatchList = document.querySelector("#home-match-list");
+const trendTabs = document.querySelector("#trend-tabs");
+const trendList = document.querySelector("#trend-list");
 const noticeModal = document.querySelector("#notice-modal");
 const noticeModalPanel = document.querySelector(".notice-modal-panel");
 const noticeModalContent = document.querySelector("#notice-modal-content");
 
-const RECOMMENDED_KEYWORDS = ["#AI", "#보안", "#양자", "#R&D", "#클라우드"];
 const FOLLOW_KEYWORDS_STORAGE_KEY = "gov_scrapper_follow_keywords";
+const SEARCH_SHORTCUTS_STORAGE_KEY = "gov_scrapper_search_shortcuts";
 
 const state = {
   notices: [],
@@ -35,11 +39,16 @@ const state = {
   bookmarks: [],
   sources: [],
   expiredSources: [],
+  trends: null,
+  loadingTrends: false,
+  loadedTrends: false,
   selectedSource: "all",
   selectedExpiredSource: "all",
   searchQuery: "",
   expiredSearchQuery: "",
   followKeywords: readFollowKeywords(),
+  searchShortcuts: readSearchShortcuts(),
+  trendMonths: 1,
   loadingNotices: false,
   loadedNotices: false,
 };
@@ -79,12 +88,14 @@ function setActiveNav() {
   }
 
   if (viewName === "home") {
+    loadTrends();
     renderHome();
   }
 }
 
 window.addEventListener("hashchange", setActiveNav);
 setActiveNav();
+renderSearchShortcuts();
 
 if (noticeSearch) {
   noticeSearch.addEventListener("input", () => {
@@ -122,14 +133,37 @@ if (expiredSearchClear && expiredSearch) {
   });
 }
 
-if (recommendedKeywords) {
-  recommendedKeywords.addEventListener("click", (event) => {
-    const button = event.target.closest(".keyword-chip");
+if (shortcutForm && shortcutInput) {
+  shortcutForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const keyword = normalizeKeyword(shortcutInput.value);
+    if (!keyword) {
+      return;
+    }
+
+    state.searchShortcuts = [...new Set([...state.searchShortcuts, keyword])];
+    shortcutInput.value = "";
+    writeSearchShortcuts();
+    renderSearchShortcuts();
+  });
+}
+
+if (shortcutKeywords) {
+  shortcutKeywords.addEventListener("click", (event) => {
+    const removeButton = event.target.closest(".shortcut-remove");
+    if (removeButton) {
+      state.searchShortcuts = state.searchShortcuts.filter((keyword) => keyword !== removeButton.dataset.keyword);
+      writeSearchShortcuts();
+      renderSearchShortcuts();
+      return;
+    }
+
+    const button = event.target.closest(".shortcut-chip");
     if (!button || !noticeSearch) {
       return;
     }
 
-    state.searchQuery = button.dataset.keyword ?? "";
+    state.searchQuery = appendSearchToken(state.searchQuery, button.dataset.keyword ?? "");
     noticeSearch.value = state.searchQuery;
     updateSearchClear();
     renderNotices();
@@ -162,6 +196,60 @@ if (followKeywords) {
     writeFollowKeywords();
     renderHome();
   });
+}
+
+if (trendTabs) {
+  trendTabs.addEventListener("click", (event) => {
+    const button = event.target.closest(".trend-tab");
+    if (!button) {
+      return;
+    }
+
+    state.trendMonths = Number(button.dataset.months || "1");
+    renderTrendPanel();
+  });
+}
+
+if (trendList) {
+  trendList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-trend-keyword]");
+    if (!button || !noticeSearch) {
+      return;
+    }
+
+    const keyword = button.dataset.trendKeyword ?? "";
+    state.searchQuery = keyword;
+    noticeSearch.value = keyword;
+    updateSearchClear();
+    window.location.hash = "#notices";
+    renderNotices();
+  });
+}
+
+async function loadTrends() {
+  if (state.loadingTrends || state.loadedTrends) {
+    return;
+  }
+
+  state.loadingTrends = true;
+  renderTrendPanel();
+
+  try {
+    const response = await fetch("/api/trends");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    state.trends = await response.json();
+    state.loadedTrends = true;
+    renderTrendPanel();
+  } catch {
+    state.trends = null;
+    state.loadedTrends = true;
+    renderTrendPanel();
+  } finally {
+    state.loadingTrends = false;
+  }
 }
 
 async function loadNotices() {
@@ -197,8 +285,9 @@ async function loadNotices() {
     state.loadedNotices = true;
     renderFilters();
     renderExpiredFilters();
-    renderRecommendedKeywords();
+    renderSearchShortcuts();
     renderHome();
+    renderTrendPanel();
     renderNotices();
     renderExpiredNotices();
     renderBookmarks();
@@ -293,9 +382,7 @@ function renderNotices() {
     return;
   }
 
-  noticeGrid.innerHTML = filteredNotices
-    .map((notice) => renderNoticeCard(notice, { highlightFollow: true }))
-    .join("");
+  noticeGrid.innerHTML = renderNoticeDateSections(sortNoticesByPostedDate(filteredNotices));
 }
 
 function renderBookmarks() {
@@ -365,6 +452,7 @@ function renderHome() {
   }
 
   renderFollowKeywords();
+  renderTrendPanel();
 
   if (!state.loadedNotices) {
     homeAlert.textContent = "공고 데이터를 불러오는 중입니다.";
@@ -396,6 +484,69 @@ function renderHome() {
   }
 
   homeMatchList.innerHTML = matchedNotices.slice(0, 12).map(renderHomeMatchItem).join("");
+}
+
+function renderTrendPanel() {
+  if (!trendList || !trendTabs) {
+    return;
+  }
+
+  for (const button of trendTabs.querySelectorAll(".trend-tab")) {
+    button.classList.toggle("active", Number(button.dataset.months) === state.trendMonths);
+  }
+
+  if (state.loadingTrends || !state.loadedTrends) {
+    trendList.innerHTML = '<p class="home-empty">트렌드를 불러오는 중입니다.</p>';
+    return;
+  }
+
+  const windowReport = state.trends?.windows?.[String(state.trendMonths)];
+  if (!windowReport) {
+    trendList.innerHTML = '<p class="home-empty">표시할 키워드 트렌드가 없습니다.</p>';
+    return;
+  }
+
+  const trends = windowReport.trend_notice_words ?? [];
+  const emergingItems = windowReport.developer_emerging_words ?? [];
+  const maxCount = Math.max(...trends.map((trend) => trend.count), 1);
+  const trendItems = trends
+    .map((trend) => {
+      const width = Math.max(8, Math.round((trend.count / maxCount) * 100));
+      return `
+        <button class="trend-item" type="button" data-trend-keyword="${escapeAttribute(trend.keyword)}">
+          <span class="trend-name">${escapeHtml(trend.keyword)}</span>
+          <span class="trend-bar" aria-hidden="true"><span style="width: ${width}%"></span></span>
+          <span class="trend-count">${trend.count}건</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  const emergingMarkup =
+    emergingItems.length > 0
+      ? `
+        <div class="trend-emerging">
+          <h3>개발 관련 신규 단어 소식</h3>
+          <div class="trend-emerging-list">
+            ${emergingItems
+              .map(
+                (item) => `
+                  <button class="trend-emerging-chip" type="button" data-trend-keyword="${escapeAttribute(item.keyword)}" title="${escapeAttribute(item.reason)}">
+                    ${escapeHtml(item.keyword)}
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+        </div>
+      `
+      : "";
+
+  trendList.innerHTML = `
+    <div class="trend-generated">분석 기준 ${escapeHtml(windowReport.notice_count)}건 · ${escapeHtml(formatTrendGeneratedAt(state.trends?.generated_at))}</div>
+    <div class="trend-items">${trendItems || '<p class="home-empty">트렌드 공고 단어가 없습니다.</p>'}</div>
+    ${emergingMarkup}
+  `;
 }
 
 function renderFollowKeywords() {
@@ -454,19 +605,65 @@ function renderHomeMatchItem(notice) {
   `;
 }
 
-function renderRecommendedKeywords() {
-  if (!recommendedKeywords) {
+function renderSearchShortcuts() {
+  if (!shortcutKeywords) {
     return;
   }
 
-  recommendedKeywords.innerHTML = RECOMMENDED_KEYWORDS.map((keyword) => {
-    const searchValue = keyword.replace(/^#+/, "");
-    return `
-      <button class="keyword-chip" type="button" data-keyword="${escapeAttribute(searchValue)}">
-        ${escapeHtml(keyword)}
-      </button>
-    `;
-  }).join("");
+  if (state.searchShortcuts.length === 0) {
+    shortcutKeywords.innerHTML = '<span class="shortcut-placeholder">자주 쓰는 검색어를 추가해두세요.</span>';
+    return;
+  }
+
+  shortcutKeywords.innerHTML = state.searchShortcuts.map((keyword) => `
+      <span class="shortcut-item">
+        <button class="shortcut-chip" type="button" data-keyword="${escapeAttribute(keyword)}">
+          ${escapeHtml(keyword)}
+        </button>
+        <button
+          class="shortcut-remove"
+          type="button"
+          data-keyword="${escapeAttribute(keyword)}"
+          aria-label="${escapeAttribute(keyword)} shortcut 삭제"
+        >
+          ×
+        </button>
+      </span>
+    `).join("");
+}
+
+function appendSearchToken(currentValue, keyword) {
+  const cleanKeyword = normalizeKeyword(keyword);
+  const normalized = normalizeSearchText(keyword);
+  if (!normalized) {
+    return currentValue;
+  }
+
+  const displayTokens = String(currentValue ?? "").trim().split(/\s+/).filter(Boolean);
+  const normalizedTokens = displayTokens.map(normalizeSearchText);
+  if (normalizedTokens.includes(normalized)) {
+    return displayTokens.join(" ");
+  }
+
+  return [...displayTokens, cleanKeyword].join(" ");
+}
+
+function readSearchShortcuts() {
+  try {
+    const raw = localStorage.getItem(SEARCH_SHORTCUTS_STORAGE_KEY);
+    const parsed = JSON.parse(raw ?? "[]");
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return [...new Set(parsed.map(normalizeKeyword).filter(Boolean))];
+  } catch {
+    return [];
+  }
+}
+
+function writeSearchShortcuts() {
+  localStorage.setItem(SEARCH_SHORTCUTS_STORAGE_KEY, JSON.stringify(state.searchShortcuts));
 }
 
 function updateSearchClear() {
@@ -485,11 +682,59 @@ function updateExpiredSearchClear() {
   expiredSearchClear.hidden = state.expiredSearchQuery.trim() === "";
 }
 
+function renderNoticeDateSections(notices) {
+  return groupNoticesByDate(notices)
+    .map(
+      ([date, dateNotices]) => `
+        <section class="notice-date-section" aria-label="${escapeAttribute(date)} 공고">
+          <div class="notice-date-header">
+            <h2>${escapeHtml(date)}</h2>
+            <span>${dateNotices.length}건</span>
+          </div>
+          <div class="notice-date-grid">
+            ${dateNotices.map((notice) => renderNoticeCard(notice, { highlightFollow: true })).join("")}
+          </div>
+        </section>
+      `,
+    )
+    .join("");
+}
+
+function groupNoticesByDate(notices) {
+  const groups = new Map();
+  for (const notice of notices) {
+    const date = notice.posted_at || "등록일 미상";
+    if (!groups.has(date)) {
+      groups.set(date, []);
+    }
+    groups.get(date).push(notice);
+  }
+
+  return [...groups.entries()];
+}
+
+function sortNoticesByPostedDate(notices) {
+  return notices
+    .map((notice, index) => ({ notice, index }))
+    .sort((left, right) => {
+      const leftDate = Date.parse(left.notice.posted_at || "");
+      const rightDate = Date.parse(right.notice.posted_at || "");
+      const leftTime = Number.isNaN(leftDate) ? 0 : leftDate;
+      const rightTime = Number.isNaN(rightDate) ? 0 : rightDate;
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ notice }) => notice);
+}
+
 function renderNoticeCard(notice, options = {}) {
   const deadlineValue = getDisplayDeadline(notice);
   const deadlineLabel = deadlineValue ? getDeadlineLabel(deadlineValue) : "";
   const deadlineText = getDisplayDeadlineText(notice);
-  const deadlineTerm = notice.deadline ? "마감일" : notice.ai_deadline ? "AI 추정" : "마감일";
   const noticeKey = getNoticeKey(notice);
   const markLabel = notice.marked ? "북마크 해제" : "북마크";
   const markClass = notice.marked ? "mark-button marked" : "mark-button";
@@ -524,7 +769,7 @@ function renderNoticeCard(notice, options = {}) {
           <dd class="${notice.posted_at === getTodayString() ? "posted-today" : ""}">${escapeHtml(notice.posted_at)}</dd>
         </div>
         <div>
-          <dt>${escapeHtml(deadlineTerm)}</dt>
+          <dt>마감일</dt>
           <dd>${escapeHtml(deadlineText)}</dd>
         </div>
       </dl>
@@ -616,7 +861,6 @@ function renderNoticeDetail(notice) {
   const deadlineValue = getDisplayDeadline(notice);
   const deadlineText = getDisplayDeadlineText(notice);
   const deadlineLabel = deadlineValue ? getDeadlineLabel(deadlineValue) : "";
-  const deadlineTerm = notice.deadline ? "마감일" : notice.ai_deadline ? "AI 추정 마감일" : "마감일";
   const keywords = Array.isArray(notice.keywords) ? notice.keywords.filter(Boolean) : [];
   const detailPoints = Array.isArray(notice.detail_points) ? notice.detail_points.filter(Boolean) : [];
   const summary = String(notice.summary ?? "").trim();
@@ -634,7 +878,7 @@ function renderNoticeDetail(notice) {
         <dd>${escapeHtml(notice.posted_at)}</dd>
       </div>
       <div>
-        <dt>${escapeHtml(deadlineTerm)}</dt>
+        <dt>마감일</dt>
         <dd>${escapeHtml(deadlineText)}</dd>
       </div>
       ${
@@ -865,7 +1109,7 @@ function normalizeSearchText(value) {
 
 function parseSearchTokens(value) {
   return String(value ?? "")
-    .split(",")
+    .split(/\s+/)
     .map(normalizeSearchText)
     .filter(Boolean);
 }
@@ -931,6 +1175,14 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatTrendGeneratedAt(value) {
+  if (!value) {
+    return "아직 생성 전";
+  }
+
+  return formatDateTime(value);
 }
 
 function getNoticeKey(notice) {

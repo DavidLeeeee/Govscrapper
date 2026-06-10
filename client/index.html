@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>정부지원사업 스크래퍼</title>
-    <link rel="stylesheet" href="/static/css/app.css?v=detail-modal-1" />
+    <link rel="stylesheet" href="/static/css/app.css?v=search-toolbar-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -64,6 +64,21 @@
             </div>
           </div>
 
+          <section class="trend-panel" aria-label="키워드 트렌드">
+            <div class="trend-header">
+              <div>
+                <h2>키워드 트렌드</h2>
+                <p>공고 제목과 요약에서 자주 등장하는 주제입니다.</p>
+              </div>
+              <div class="trend-tabs" id="trend-tabs">
+                <button class="trend-tab active" type="button" data-months="1">1개월</button>
+                <button class="trend-tab" type="button" data-months="2">2개월</button>
+                <button class="trend-tab" type="button" data-months="6">6개월</button>
+              </div>
+            </div>
+            <div class="trend-list" id="trend-list"></div>
+          </section>
+
           <section class="follow-panel" aria-label="관심 키워드">
             <div class="follow-header">
               <div>
@@ -114,14 +129,20 @@
                 class="search-input"
                 id="notice-search"
                 type="search"
-                placeholder="키워드 검색, 콤마로 여러 단어"
+                placeholder="키워드 검색, 공백으로 여러 단어"
                 autocomplete="off"
               />
               <button class="search-clear" id="notice-search-clear" type="button" aria-label="검색어 지우기" hidden>
                 ×
               </button>
             </div>
-            <div class="recommended-keywords" id="recommended-keywords"></div>
+            <div class="search-shortcuts" aria-label="검색 shortcut">
+              <form class="shortcut-form" id="shortcut-form">
+                <input id="shortcut-input" type="text" placeholder="shortcut 추가" autocomplete="off" />
+                <button type="submit">추가</button>
+              </form>
+              <div class="shortcut-keywords" id="shortcut-keywords"></div>
+            </div>
           </div>
 
           <div class="notice-grid" id="notice-grid"></div>
@@ -146,7 +167,7 @@
                 class="search-input"
                 id="expired-search"
                 type="search"
-                placeholder="키워드 검색, 콤마로 여러 단어"
+                placeholder="키워드 검색, 공백으로 여러 단어"
                 autocomplete="off"
               />
               <button class="search-clear" id="expired-search-clear" type="button" aria-label="검색어 지우기" hidden>
@@ -215,6 +236,6 @@
         <div class="notice-modal-content" id="notice-modal-content"></div>
       </section>
     </div>
-    <script src="/static/js/app.js?v=detail-modal-1"></script>
+    <script src="/static/js/app.js?v=search-toolbar-1"></script>
   </body>
 </html>

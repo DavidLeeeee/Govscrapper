@@ -10,6 +10,8 @@ from src.contracts.scrape_options import ScrapeOptions
 from src.services.file_lock import file_lock
 from src.services.scraping_service import run_scraping
 from src.services.summarization_service import build_openai_summarizer
+from src.services.trends.openai_trend_service import OpenAITrendAnalyzer
+from src.services.trends.trend_service import generate_and_store_trends
 from src.settings import get_settings
 
 
@@ -38,6 +40,19 @@ def main() -> None:
             summarizer=summarizer,
             on_summary_progress=lambda message: print(message, flush=True),
         )
+        if settings.generate_trends_after_scraping:
+            if not settings.openai_api_key:
+                raise RuntimeError("GENERATE_TRENDS_AFTER_SCRAPING=true 이지만 OPENAI_API_KEY가 .env에 설정되어 있지 않습니다.")
+            print("[trends] 키워드 트렌드 생성 시작", flush=True)
+            trend_report = generate_and_store_trends(
+                settings.data_dir,
+                OpenAITrendAnalyzer(
+                    api_key=settings.openai_api_key,
+                    model=settings.openai_trend_model,
+                ),
+            )
+            result["trends_generated_at"] = trend_report["generated_at"]
+
         print(result)
 
 

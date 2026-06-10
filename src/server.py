@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from src.api.errors import domain_error_handler
 from src.api.routes.health import router as health_router
 from src.api.routes.notices import router as notices_router
+from src.api.routes.trends import router as trends_router
 from src.domain.exception import DomainError
 from src.settings import Settings, get_settings
 
@@ -50,5 +51,6 @@ def start_app() -> FastAPI:
     # API 라우터 등록
     app.include_router(health_router, prefix="/api")
     app.include_router(notices_router, prefix="/api")
+    app.include_router(trends_router, prefix="/api")
 
     return app
