@@ -159,6 +159,22 @@ def summarize_notices(
     for notice in notices:
         updated = _copy_existing_summary(notice, existing_by_key.get(notice_key(notice)))
         if not force and _has_summary(updated):
+            if not updated.get("deadline") and not updated.get("ai_deadline"):
+                _emit_progress(on_progress, f"  - 기존 요약 공고 마감일 보강: {updated.get('title', '')}")
+                try:
+                    detail_text = fetch_notice_detail_text(updated)
+                    deadline_candidate = extract_deadline_candidate(detail_text)
+                    if deadline_candidate is not None:
+                        updated["ai_deadline"] = deadline_candidate.deadline
+                        updated["ai_deadline_text"] = deadline_candidate.source_text
+                        updated["ai_deadline_confidence"] = deadline_candidate.confidence
+                        _emit_progress(on_progress, f"  - 마감일 추출: {deadline_candidate.deadline}")
+                    else:
+                        _emit_progress(on_progress, "  - 마감일 후보 없음")
+                except Exception as exc:
+                    stats["error_count"] += 1
+                    _emit_progress(on_progress, f"  - 마감일 보강 실패: {type(exc).__name__}: {exc}")
+
             stats["skipped_count"] += 1
             updated_notices.append(updated)
             continue
@@ -179,6 +195,8 @@ def summarize_notices(
                 continue
 
             deadline_candidate = extract_deadline_candidate(detail_text)
+            if deadline_candidate is not None:
+                _emit_progress(on_progress, f"  - 마감일 추출: {deadline_candidate.deadline}")
             _emit_progress(on_progress, "  - OpenAI 요약 요청")
             summary = summarizer.summarize(updated, detail_text)
             updated["summary"] = summary["summary"]

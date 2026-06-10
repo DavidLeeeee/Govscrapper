@@ -16,7 +16,7 @@ from src.settings import get_settings
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="등록된 모든 스크래퍼를 넓은 날짜 범위로 수집해 파일 저장소에 반영한다.")
-    parser.add_argument("--start-date", default="2026-06-01", help="수집 시작일. 기본값: 2026-06-01")
+    parser.add_argument("--start-date", default="2026-05-20", help="수집 시작일. 기본값: 2026-06-01")
     parser.add_argument("--end-date", default=date.today().isoformat(), help="수집 종료일. 기본값: 오늘")
     args = parser.parse_args()
 
