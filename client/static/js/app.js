@@ -274,11 +274,10 @@ function renderExpiredFilters() {
 }
 
 function renderNotices() {
-  const normalizedQuery = normalizeSearchText(state.searchQuery);
+  const searchTokens = parseSearchTokens(state.searchQuery);
   const filteredNotices = state.notices.filter((notice) => {
     const matchesSource = state.selectedSource === "all" || notice.source === state.selectedSource;
-    const matchesSearch =
-      normalizedQuery === "" || normalizeSearchText(notice.title).includes(normalizedQuery);
+    const matchesSearch = matchesNoticeSearch(notice, searchTokens);
 
     return matchesSource && matchesSearch;
   });
@@ -325,11 +324,10 @@ function renderExpiredNotices() {
     return;
   }
 
-  const normalizedQuery = normalizeSearchText(state.expiredSearchQuery);
+  const searchTokens = parseSearchTokens(state.expiredSearchQuery);
   const filteredNotices = state.expiredNotices.filter((notice) => {
     const matchesSource = state.selectedExpiredSource === "all" || notice.source === state.selectedExpiredSource;
-    const matchesSearch =
-      normalizedQuery === "" || normalizeSearchText(notice.title).includes(normalizedQuery);
+    const matchesSearch = matchesNoticeSearch(notice, searchTokens);
 
     return matchesSource && matchesSearch;
   });
@@ -863,6 +861,31 @@ function normalizeSearchText(value) {
     .replaceAll("#", "")
     .trim()
     .toLocaleLowerCase("ko-KR");
+}
+
+function parseSearchTokens(value) {
+  return String(value ?? "")
+    .split(",")
+    .map(normalizeSearchText)
+    .filter(Boolean);
+}
+
+function matchesNoticeSearch(notice, searchTokens) {
+  if (searchTokens.length === 0) {
+    return true;
+  }
+
+  const searchable = normalizeSearchText(
+    [
+      notice.title,
+      notice.summary,
+      notice.ai_deadline_text,
+      ...(notice.keywords ?? []),
+      ...(notice.detail_points ?? []),
+    ].join(" "),
+  );
+
+  return searchTokens.some((token) => searchable.includes(token));
 }
 
 function normalizeKeyword(value) {
