@@ -21,6 +21,11 @@ class Settings:
     runtime_dir: Path = Path("runtime")
     google_chat_webhook_url: str | None = None
     no_deadline_expire_days: int = 60
+    openai_api_key: str | None = None
+    openai_summary_model: str = "gpt-5-nano"
+    summarize_notices: bool = False
+    summary_max_detail_chars: int = 4000
+    summary_max_output_tokens: int = 700
 
 
 @lru_cache
@@ -32,4 +37,13 @@ def get_settings() -> Settings:
         runtime_dir=Path(os.getenv("RUNTIME_DIR", "runtime")),
         google_chat_webhook_url=os.getenv("GOOGLE_CHAT_WEBHOOK_URL"),
         no_deadline_expire_days=int(os.getenv("NO_DEADLINE_EXPIRE_DAYS", "60")),
+        openai_api_key=os.getenv("OPENAI_API_KEY") or None,
+        openai_summary_model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-5-nano"),
+        summarize_notices=_read_bool(os.getenv("SUMMARIZE_NOTICES")),
+        summary_max_detail_chars=int(os.getenv("SUMMARY_MAX_DETAIL_CHARS", "4000")),
+        summary_max_output_tokens=int(os.getenv("SUMMARY_MAX_OUTPUT_TOKENS", "700")),
     )
+
+
+def _read_bool(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}

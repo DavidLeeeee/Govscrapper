@@ -14,6 +14,9 @@ class Notice(TypedDict):
     summary: NotRequired[str | None]
     detail_points: NotRequired[list[str]]
     detail_fetched_at: NotRequired[str | None]
+    ai_deadline: NotRequired[str | None]
+    ai_deadline_text: NotRequired[str | None]
+    ai_deadline_confidence: NotRequired[str | None]
     marked: NotRequired[bool]
     mark: NotRequired[dict[str, Any]]
 
@@ -27,3 +30,11 @@ class MarkRecord(TypedDict):
     marked_by: str
     marked_at: str
     memo: str | None
+
+
+class NoticeSummary(TypedDict):
+    summary: str
+    detail_points: list[str]
+    ai_deadline: str | None
+    ai_deadline_text: str | None
+    ai_deadline_confidence: str

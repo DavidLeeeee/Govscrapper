@@ -36,6 +36,18 @@ def normalize_notice(notice: Notice) -> Notice:
         fetched_at = notice.get("detail_fetched_at")
         normalized["detail_fetched_at"] = str(fetched_at).strip() if fetched_at else None
 
+    if "ai_deadline" in notice:
+        ai_deadline = notice.get("ai_deadline")
+        normalized["ai_deadline"] = str(ai_deadline).strip() if ai_deadline else None
+
+    if "ai_deadline_text" in notice:
+        ai_deadline_text = notice.get("ai_deadline_text")
+        normalized["ai_deadline_text"] = str(ai_deadline_text).strip() if ai_deadline_text else None
+
+    if "ai_deadline_confidence" in notice:
+        ai_deadline_confidence = notice.get("ai_deadline_confidence")
+        normalized["ai_deadline_confidence"] = str(ai_deadline_confidence).strip() if ai_deadline_confidence else None
+
     return normalized
 
 
@@ -107,9 +119,30 @@ def merge_notices(existing: Iterable[Notice], incoming: Iterable[Notice]) -> lis
         merged[notice_key(notice)] = notice
 
     for notice in incoming:
-        merged[notice_key(notice)] = notice
+        key = notice_key(notice)
+        previous = merged.get(key)
+        merged[key] = _merge_notice_detail_fields(previous, notice)
 
     return sort_notices(list(merged.values()))
+
+
+def _merge_notice_detail_fields(existing: Notice | None, incoming: Notice) -> Notice:
+    if existing is None:
+        return incoming
+
+    merged = dict(incoming)
+    for field in (
+        "summary",
+        "detail_points",
+        "detail_fetched_at",
+        "ai_deadline",
+        "ai_deadline_text",
+        "ai_deadline_confidence",
+    ):
+        if field not in merged and field in existing:
+            merged[field] = existing[field]  # type: ignore[literal-required]
+
+    return merged  # type: ignore[return-value]
 
 
 def sort_notices(notices: Iterable[Notice]) -> list[Notice]:

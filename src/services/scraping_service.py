@@ -11,6 +11,7 @@ from typing import Any
 from src.contracts.notice import Notice
 from src.contracts.scrape_options import ScrapeOptions
 from src.services.notification_service import build_new_notice_message, send_google_chat_message
+from src.services.summarization_service import NoticeSummarizer, summarize_notices
 from src.services.storage_service import (
     atomic_write_json,
     find_new_notices,
@@ -30,8 +31,10 @@ def run_scraping(
     scrapers: dict[str, Scraper],
     options: ScrapeOptions,
     google_chat_webhook_url: str | None = None,
+    summarizer: NoticeSummarizer | None = None,
+    on_summary_progress: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
-    result: dict[str, Any] = {"sources": {}, "new_count": 0}
+    result: dict[str, Any] = {"sources": {}, "new_count": 0, "summarized_count": 0, "summary_error_count": 0}
     today = datetime.now().date()
 
     for source_name, scraper in scrapers.items():
@@ -41,6 +44,18 @@ def run_scraping(
 
         active_path = source_active_path(data_dir, source_name)
         existing_items = read_json_list(active_path)
+        if summarizer is not None:
+            if on_summary_progress is not None:
+                on_summary_progress(f"[source] {source_name} 요약 시작")
+            scraped_items, summary_stats = summarize_notices(
+                scraped_items,
+                summarizer,
+                existing_items,
+                on_progress=on_summary_progress,
+            )
+            result["summarized_count"] += summary_stats["summarized_count"]
+            result["summary_error_count"] += summary_stats["error_count"]
+
         new_items = find_new_notices(existing_items, scraped_items)
         merged_items = merge_notices(existing_items, scraped_items)
         atomic_write_json(active_path, merged_items)
@@ -48,6 +63,8 @@ def run_scraping(
         result["sources"][source_name] = {
             "scraped_count": len(scraped_items),
             "new_count": len(new_items),
+            "summarized_count": summary_stats["summarized_count"] if summarizer is not None else 0,
+            "summary_error_count": summary_stats["error_count"] if summarizer is not None else 0,
         }
         result["new_count"] += len(new_items)
 

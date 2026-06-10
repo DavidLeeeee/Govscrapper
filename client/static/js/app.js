@@ -488,8 +488,10 @@ function updateExpiredSearchClear() {
 }
 
 function renderNoticeCard(notice, options = {}) {
-  const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "";
-  const deadlineText = notice.deadline ?? "확인 필요";
+  const deadlineValue = getDisplayDeadline(notice);
+  const deadlineLabel = deadlineValue ? getDeadlineLabel(deadlineValue) : "";
+  const deadlineText = getDisplayDeadlineText(notice);
+  const deadlineTerm = notice.deadline ? "마감일" : notice.ai_deadline ? "AI 추정" : "마감일";
   const noticeKey = getNoticeKey(notice);
   const markLabel = notice.marked ? "북마크 해제" : "북마크";
   const markClass = notice.marked ? "mark-button marked" : "mark-button";
@@ -518,7 +520,7 @@ function renderNoticeCard(notice, options = {}) {
           <dd>${escapeHtml(notice.posted_at)}</dd>
         </div>
         <div>
-          <dt>마감일</dt>
+          <dt>${escapeHtml(deadlineTerm)}</dt>
           <dd>${escapeHtml(deadlineText)}</dd>
         </div>
       </dl>
@@ -607,8 +609,10 @@ function closeNoticeModal() {
 }
 
 function renderNoticeDetail(notice) {
-  const deadlineText = notice.deadline ?? "확인 필요";
-  const deadlineLabel = notice.deadline ? getDeadlineLabel(notice.deadline) : "";
+  const deadlineValue = getDisplayDeadline(notice);
+  const deadlineText = getDisplayDeadlineText(notice);
+  const deadlineLabel = deadlineValue ? getDeadlineLabel(deadlineValue) : "";
+  const deadlineTerm = notice.deadline ? "마감일" : notice.ai_deadline ? "AI 추정 마감일" : "마감일";
   const keywords = Array.isArray(notice.keywords) ? notice.keywords.filter(Boolean) : [];
   const detailPoints = Array.isArray(notice.detail_points) ? notice.detail_points.filter(Boolean) : [];
   const summary = String(notice.summary ?? "").trim();
@@ -626,7 +630,7 @@ function renderNoticeDetail(notice) {
         <dd>${escapeHtml(notice.posted_at)}</dd>
       </div>
       <div>
-        <dt>마감일</dt>
+        <dt>${escapeHtml(deadlineTerm)}</dt>
         <dd>${escapeHtml(deadlineText)}</dd>
       </div>
       ${
@@ -642,6 +646,14 @@ function renderNoticeDetail(notice) {
       <h3>요약</h3>
       <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
     </section>
+    ${
+      !notice.deadline && notice.ai_deadline_text
+        ? `<section class="notice-detail-section">
+            <h3>마감일 근거</h3>
+            <p>${escapeHtml(notice.ai_deadline_text)} (${escapeHtml(getAiDeadlineConfidenceLabel(notice.ai_deadline_confidence))})</p>
+          </section>`
+        : ""
+    }
     ${
       detailPoints.length > 0
         ? `<section class="notice-detail-section">
@@ -667,7 +679,7 @@ function renderNoticeDetail(notice) {
 
 function buildFallbackSummary(notice) {
   const source = notice.source_display_name ?? notice.source;
-  const deadlineText = notice.deadline ?? "확인 필요";
+  const deadlineText = getDisplayDeadlineText(notice);
   return `${source}에서 수집한 공고입니다. 상세 요약은 아직 수집되지 않았으며, 등록일은 ${notice.posted_at}, 마감일은 ${deadlineText}입니다. 원문 공고에서 지원 대상과 신청 방법을 확인하세요.`;
 }
 
@@ -788,6 +800,43 @@ function getDeadlineLabel(deadline) {
     return "오늘 마감";
   }
   return `D-${diffDays}`;
+}
+
+function getDisplayDeadline(notice) {
+  if (notice.deadline) {
+    return notice.deadline;
+  }
+
+  if (notice.ai_deadline && notice.ai_deadline_confidence === "high") {
+    return notice.ai_deadline;
+  }
+
+  return "";
+}
+
+function getDisplayDeadlineText(notice) {
+  if (notice.deadline) {
+    return notice.deadline;
+  }
+
+  if (notice.ai_deadline && notice.ai_deadline_confidence === "high") {
+    return `${notice.ai_deadline} (AI 추정)`;
+  }
+
+  return "확인 필요";
+}
+
+function getAiDeadlineConfidenceLabel(confidence) {
+  if (confidence === "high") {
+    return "신뢰도 높음";
+  }
+  if (confidence === "medium") {
+    return "신뢰도 보통";
+  }
+  if (confidence === "low") {
+    return "신뢰도 낮음";
+  }
+  return "신뢰도 없음";
 }
 
 function escapeHtml(value) {
