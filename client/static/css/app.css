@@ -542,6 +542,7 @@ body.modal-open {
 }
 
 .notices-view {
+  position: relative;
   max-width: 1480px;
 }
 
@@ -687,6 +688,52 @@ body.modal-open {
 .notices-view .shortcut-remove:hover {
   color: #102a43;
   background: #f0f4f8;
+}
+
+.date-jump {
+  position: fixed;
+  top: 154px;
+  right: 22px;
+  z-index: 20;
+  display: grid;
+  width: 52px;
+  max-height: calc(100vh - 180px);
+  gap: 6px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(16, 42, 67, 0.14);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.date-jump:empty {
+  display: none;
+}
+
+.date-jump::-webkit-scrollbar {
+  display: none;
+}
+
+.date-jump button {
+  width: 38px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: #52616f;
+  background: #f0f4f8;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.date-jump button:hover {
+  color: #0f766e;
+  background: #e6f7f3;
 }
 
 .filter-bar {
@@ -1606,6 +1653,14 @@ body.modal-open {
   .notices-view .page-header {
     align-items: flex-start;
     padding: 18px 18px 18px 22px;
+  }
+
+  .notices-view {
+    padding-right: 0;
+  }
+
+  .date-jump {
+    display: none;
   }
 
   .notices-view .page-header h1 {

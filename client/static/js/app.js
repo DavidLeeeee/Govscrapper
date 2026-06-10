@@ -3,6 +3,7 @@ const views = [...document.querySelectorAll("[data-view]")];
 const filterBar = document.querySelector(".filter-bar");
 const noticeGrid = document.querySelector("#notice-grid");
 const noticeCount = document.querySelector("#notice-count");
+const dateJump = document.querySelector("#date-jump");
 const expiredFilterBar = document.querySelector("#expired-filter-bar");
 const expiredGrid = document.querySelector("#expired-grid");
 const expiredCount = document.querySelector("#expired-count");
@@ -198,6 +199,20 @@ if (followKeywords) {
   });
 }
 
+if (dateJump) {
+  dateJump.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-date-target]");
+    if (!button) {
+      return;
+    }
+
+    document.querySelector(`#${button.dataset.dateTarget}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
+}
+
 if (trendTabs) {
   trendTabs.addEventListener("click", (event) => {
     const button = event.target.closest(".trend-tab");
@@ -379,10 +394,13 @@ function renderNotices() {
 
   if (filteredNotices.length === 0) {
     noticeGrid.innerHTML = '<p class="empty-state">표시할 공고가 없습니다.</p>';
+    renderDateJump([]);
     return;
   }
 
-  noticeGrid.innerHTML = renderNoticeDateSections(sortNoticesByPostedDate(filteredNotices));
+  const groupedNotices = groupNoticesByDate(sortNoticesByPostedDate(filteredNotices));
+  noticeGrid.innerHTML = renderNoticeDateSections(groupedNotices);
+  renderDateJump(groupedNotices);
 }
 
 function renderBookmarks() {
@@ -682,11 +700,11 @@ function updateExpiredSearchClear() {
   expiredSearchClear.hidden = state.expiredSearchQuery.trim() === "";
 }
 
-function renderNoticeDateSections(notices) {
-  return groupNoticesByDate(notices)
+function renderNoticeDateSections(groupedNotices) {
+  return groupedNotices
     .map(
       ([date, dateNotices]) => `
-        <section class="notice-date-section" aria-label="${escapeAttribute(date)} 공고">
+        <section class="notice-date-section" id="${escapeAttribute(getDateSectionId(date))}" aria-label="${escapeAttribute(date)} 공고">
           <div class="notice-date-header">
             <h2>${escapeHtml(date)}</h2>
             <span>${dateNotices.length}건</span>
@@ -698,6 +716,40 @@ function renderNoticeDateSections(notices) {
       `,
     )
     .join("");
+}
+
+function renderDateJump(groupedNotices) {
+  if (!dateJump) {
+    return;
+  }
+
+  if (groupedNotices.length === 0) {
+    dateJump.innerHTML = "";
+    return;
+  }
+
+  dateJump.innerHTML = groupedNotices
+    .map(
+      ([date, dateNotices]) => `
+        <button type="button" data-date-target="${escapeAttribute(getDateSectionId(date))}" title="${escapeAttribute(`${date} ${dateNotices.length}건`)}">
+          ${escapeHtml(formatDateJumpLabel(date))}
+        </button>
+      `,
+    )
+    .join("");
+}
+
+function getDateSectionId(date) {
+  return `notice-date-${String(date).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function formatDateJumpLabel(date) {
+  const match = String(date).match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return String(date);
+  }
+
+  return `${match[1]}.${match[2]}`;
 }
 
 function groupNoticesByDate(notices) {
