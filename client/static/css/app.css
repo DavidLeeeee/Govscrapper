@@ -1350,25 +1350,114 @@ body.modal-open {
 
 .notice-detail-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 24px;
 }
 
-.notice-origin-link {
+.notice-origin-link,
+.notice-expire-button {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
   padding: 0 16px;
+  border: 0;
   border-radius: 7px;
   color: #ffffff;
-  background: #1d4ed8;
+  font: inherit;
   font-size: 14px;
   font-weight: 800;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.notice-origin-link {
+  background: #1d4ed8;
 }
 
 .notice-origin-link:hover {
   background: #1e40af;
+}
+
+.notice-expire-button {
+  background: #b42318;
+}
+
+.notice-expire-button:hover {
+  background: #8a1c13;
+}
+
+.notice-expire-confirm {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff7f7;
+}
+
+.notice-expire-confirm[hidden] {
+  display: none;
+}
+
+.notice-expire-confirm strong {
+  color: #7f1d1d;
+  font-size: 14px;
+}
+
+.notice-expire-confirm p {
+  margin: 0;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.notice-expire-confirm.error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.notice-expire-confirm div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.notice-expire-confirm-button,
+.notice-expire-cancel-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notice-expire-confirm-button {
+  color: #ffffff;
+  background: #b42318;
+}
+
+.notice-expire-confirm-button:hover {
+  background: #8a1c13;
+}
+
+.notice-expire-confirm-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.notice-expire-cancel-button {
+  color: #334e68;
+  background: #dde6ef;
+}
+
+.notice-expire-cancel-button:hover {
+  background: #cbd8e6;
 }
 
 .help-panel {

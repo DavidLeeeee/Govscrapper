@@ -218,3 +218,33 @@ def source_snapshot_dir(data_dir: Path, source_name: str, snapshot_date: date) -
 
 def marked_path(data_dir: Path) -> Path:
     return data_dir / "marked" / "items.json"
+
+
+def manually_expire_notice(data_dir: Path, notice: Notice, expired_at: date | None = None) -> Notice | None:
+    source = str(notice.get("source", ""))
+    if not source:
+        return None
+
+    active_path = source_active_path(data_dir, source)
+    active_items = read_json_list(active_path)
+    target_key = notice_key(notice)
+    remaining_items: list[Notice] = []
+    expired_notice: Notice | None = None
+
+    for item in active_items:
+        if notice_key(item) == target_key:
+            expired_notice = item
+            continue
+        remaining_items.append(item)
+
+    if expired_notice is None:
+        return None
+
+    atomic_write_json(active_path, sort_notices(remaining_items))
+
+    moved_at = expired_at or datetime.now().date()
+    expired_path = source_expired_path(data_dir, source, moved_at.year)
+    existing_expired = read_json_list(expired_path)
+    atomic_write_json(expired_path, merge_notices(existing_expired, [expired_notice]))
+
+    return expired_notice

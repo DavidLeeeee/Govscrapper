@@ -320,7 +320,7 @@ function renderFilters() {
     ${sourceButtons}
   `;
 
-  filterBar.addEventListener("click", (event) => {
+  filterBar.onclick = (event) => {
     const button = event.target.closest(".filter-chip");
     if (!button) {
       return;
@@ -328,7 +328,7 @@ function renderFilters() {
 
     state.selectedSource = button.dataset.source;
     renderNotices();
-  });
+  };
 }
 
 function renderExpiredFilters() {
@@ -351,7 +351,7 @@ function renderExpiredFilters() {
     ${sourceButtons}
   `;
 
-  expiredFilterBar.addEventListener("click", (event) => {
+  expiredFilterBar.onclick = (event) => {
     const button = event.target.closest(".filter-chip");
     if (!button) {
       return;
@@ -359,7 +359,7 @@ function renderExpiredFilters() {
 
     state.selectedExpiredSource = button.dataset.source;
     renderExpiredNotices();
-  });
+  };
 }
 
 function renderNotices() {
@@ -814,6 +814,34 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  const expireButton = event.target.closest("[data-force-expire-key]");
+  if (expireButton) {
+    const confirmPanel = noticeModalContent?.querySelector(".notice-expire-confirm");
+    if (confirmPanel) {
+      confirmPanel.hidden = false;
+      confirmPanel.querySelector("[data-confirm-expire]")?.focus();
+    }
+    return;
+  }
+
+  if (event.target.closest("[data-cancel-expire]")) {
+    const confirmPanel = noticeModalContent?.querySelector(".notice-expire-confirm");
+    if (confirmPanel) {
+      confirmPanel.hidden = true;
+    }
+    return;
+  }
+
+  const confirmExpireButton = event.target.closest("[data-confirm-expire]");
+  if (confirmExpireButton) {
+    const notice = findNoticeByKey(confirmExpireButton.dataset.confirmExpire);
+    if (notice) {
+      confirmExpireButton.disabled = true;
+      await forceExpireNotice(notice);
+    }
+    return;
+  }
+
   const button = event.target.closest(".mark-button");
   if (!button) {
     return;
@@ -920,8 +948,31 @@ function renderNoticeDetail(notice) {
         : ""
     }
     <div class="notice-detail-actions">
+      ${
+        notice.expired
+          ? ""
+          : `<button class="notice-expire-button" type="button" data-force-expire-key="${escapeAttribute(getNoticeKey(notice))}">
+              마감시키기
+            </button>`
+      }
       <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
     </div>
+    ${
+      notice.expired
+        ? ""
+        : `<div class="notice-expire-confirm" hidden>
+            <strong>이 공고를 정말 마감 처리할까요?</strong>
+            <p>공고조회 목록에서 제거되고 마감공고로 이동합니다.</p>
+            <div>
+              <button class="notice-expire-confirm-button" type="button" data-confirm-expire="${escapeAttribute(getNoticeKey(notice))}">
+                마감 처리
+              </button>
+              <button class="notice-expire-cancel-button" type="button" data-cancel-expire>
+                취소
+              </button>
+            </div>
+          </div>`
+    }
   `;
 }
 
@@ -980,6 +1031,68 @@ async function toggleNoticeMark(notice) {
     renderBookmarks();
     renderHome();
   }
+}
+
+async function forceExpireNotice(notice) {
+  const key = getNoticeKey(notice);
+
+  try {
+    const response = await fetch("/api/notices/expire", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(notice),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const expiredNotice = await response.json();
+    state.notices = state.notices.filter((item) => getNoticeKey(item) !== key);
+    state.expiredNotices = sortNoticesByPostedDate([
+      { ...notice, ...expiredNotice, expired: true },
+      ...state.expiredNotices.filter((item) => getNoticeKey(item) !== key),
+    ]);
+    state.sources = buildSourcesFromNotices(state.notices);
+    state.expiredSources = buildSourcesFromNotices(state.expiredNotices);
+    if (state.selectedSource !== "all" && !state.sources.some((source) => source.source === state.selectedSource)) {
+      state.selectedSource = "all";
+    }
+    state.bookmarks = state.bookmarks.map((item) =>
+      getNoticeKey(item) === key ? { ...item, ...expiredNotice, expired: true } : item,
+    );
+
+    closeNoticeModal();
+    renderFilters();
+    renderExpiredFilters();
+    renderNotices();
+    renderExpiredNotices();
+    renderBookmarks();
+    renderHome();
+  } catch {
+    const confirmPanel = noticeModalContent?.querySelector(".notice-expire-confirm");
+    const confirmButton = confirmPanel?.querySelector("[data-confirm-expire]");
+    if (confirmButton) {
+      confirmButton.disabled = false;
+    }
+    if (confirmPanel) {
+      confirmPanel.classList.add("error");
+      confirmPanel.querySelector("p").textContent = "마감 처리에 실패했습니다. 잠시 후 다시 시도하세요.";
+    }
+  }
+}
+
+function buildSourcesFromNotices(notices) {
+  return Object.entries(
+    notices.reduce((acc, notice) => {
+      acc[notice.source] = notice.source_display_name ?? notice.source;
+      return acc;
+    }, {}),
+  )
+    .map(([source, displayName]) => ({ source, display_name: displayName }))
+    .sort((left, right) => left.display_name.localeCompare(right.display_name, "ko-KR"));
 }
 
 function syncBookmarkState(notice) {

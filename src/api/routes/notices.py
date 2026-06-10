@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from src.scrapers.SITES_INFO import ScrapeTarget
 from src.services.marked_service import apply_marked_state, list_marked_notices, mark_notice, unmark_notice
-from src.services.storage_service import merge_notices, notice_key_string, read_json_list, sort_notices
+from src.services.storage_service import manually_expire_notice, merge_notices, notice_key_string, read_json_list, sort_notices
 
 
 router = APIRouter(tags=["notices"])
@@ -136,4 +136,20 @@ async def remove_notice_mark(request: Request, payload: dict[str, Any]) -> dict[
     return {
         "key": key,
         "removed": removed,
+    }
+
+
+@router.post("/notices/expire")
+async def expire_notice(request: Request, notice: dict[str, Any]) -> dict[str, Any]:
+    data_dir: Path = request.app.state.settings.data_dir
+    expired_notice = manually_expire_notice(data_dir, notice)
+
+    if expired_notice is None:
+        raise HTTPException(status_code=404, detail="Active notice not found")
+
+    source = expired_notice["source"]
+    return {
+        **expired_notice,
+        "source_display_name": SOURCE_NAMES.get(source, source),
+        "expired": True,
     }
