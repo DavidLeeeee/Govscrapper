@@ -13,6 +13,11 @@ const noticeSearch = document.querySelector("#notice-search");
 const noticeSearchClear = document.querySelector("#notice-search-clear");
 const expiredSearch = document.querySelector("#expired-search");
 const expiredSearchClear = document.querySelector("#expired-search-clear");
+const regionalGrid = document.querySelector("#regional-grid");
+const regionalCount = document.querySelector("#regional-count");
+const regionalRegionFilter = document.querySelector("#regional-region-filter");
+const regionalSearch = document.querySelector("#regional-search");
+const regionalSearchClear = document.querySelector("#regional-search-clear");
 const shortcutForm = document.querySelector("#shortcut-form");
 const shortcutInput = document.querySelector("#shortcut-input");
 const shortcutKeywords = document.querySelector("#shortcut-keywords");
@@ -37,21 +42,27 @@ const SEARCH_SHORTCUTS_STORAGE_KEY = "gov_scrapper_search_shortcuts";
 const state = {
   notices: [],
   expiredNotices: [],
+  regionalNotices: [],
   bookmarks: [],
   sources: [],
   expiredSources: [],
+  regions: [],
   trends: null,
   loadingTrends: false,
   loadedTrends: false,
   selectedSource: "all",
   selectedExpiredSource: "all",
+  selectedRegion: "all",
   searchQuery: "",
   expiredSearchQuery: "",
+  regionalSearchQuery: "",
   followKeywords: readFollowKeywords(),
   searchShortcuts: readSearchShortcuts(),
   trendMonths: 1,
   loadingNotices: false,
   loadedNotices: false,
+  loadingRegionalNotices: false,
+  loadedRegionalNotices: false,
 };
 
 function setActiveNav() {
@@ -78,6 +89,14 @@ function setActiveNav() {
     !state.loadedNotices
   ) {
     loadNotices();
+  }
+
+  if (viewName === "regional" && !state.loadedRegionalNotices) {
+    loadRegionalNotices();
+  }
+
+  if (viewName === "regional") {
+    renderRegionalNotices();
   }
 
   if (viewName === "bookmarks") {
@@ -146,6 +165,24 @@ if (shortcutForm && shortcutInput) {
     shortcutInput.value = "";
     writeSearchShortcuts();
     renderSearchShortcuts();
+  });
+}
+
+if (regionalSearch) {
+  regionalSearch.addEventListener("input", () => {
+    state.regionalSearchQuery = regionalSearch.value;
+    updateRegionalSearchClear();
+    renderRegionalNotices();
+  });
+}
+
+if (regionalSearchClear && regionalSearch) {
+  regionalSearchClear.addEventListener("click", () => {
+    state.regionalSearchQuery = "";
+    regionalSearch.value = "";
+    updateRegionalSearchClear();
+    regionalSearch.focus();
+    renderRegionalNotices();
   });
 }
 
@@ -319,6 +356,37 @@ async function loadNotices() {
   }
 }
 
+async function loadRegionalNotices() {
+  if (state.loadingRegionalNotices) {
+    return;
+  }
+
+  if (!regionalGrid || !regionalRegionFilter || !regionalCount) {
+    return;
+  }
+
+  state.loadingRegionalNotices = true;
+  regionalGrid.innerHTML = '<p class="empty-state">지역공고를 불러오는 중입니다.</p>';
+
+  try {
+    const response = await fetch("/api/regional-notices");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    state.regionalNotices = data.notices ?? [];
+    state.regions = data.regions ?? [];
+    state.loadedRegionalNotices = true;
+    renderRegionalFilters();
+    renderRegionalNotices();
+  } catch {
+    regionalGrid.innerHTML = '<p class="empty-state">지역공고를 불러오지 못했습니다.</p>';
+  } finally {
+    state.loadingRegionalNotices = false;
+  }
+}
+
 function renderFilters() {
   const sourceButtons = state.sources
     .map(
@@ -377,6 +445,37 @@ function renderExpiredFilters() {
   };
 }
 
+function renderRegionalFilters() {
+  if (!regionalRegionFilter) {
+    return;
+  }
+
+  const regionButtons = state.regions
+    .map(
+      (item) => `
+        <button class="filter-chip" type="button" data-region="${escapeAttribute(item.region)}">
+          ${escapeHtml(item.region)} ${escapeHtml(item.count)}
+        </button>
+      `,
+    )
+    .join("");
+
+  regionalRegionFilter.innerHTML = `
+    <button class="filter-chip active" type="button" data-region="all">전체</button>
+    ${regionButtons}
+  `;
+
+  regionalRegionFilter.onclick = (event) => {
+    const button = event.target.closest(".filter-chip");
+    if (!button) {
+      return;
+    }
+
+    state.selectedRegion = button.dataset.region;
+    renderRegionalNotices();
+  };
+}
+
 function renderNotices() {
   const searchTokens = parseSearchTokens(state.searchQuery);
   const filteredNotices = state.notices.filter((notice) => {
@@ -401,6 +500,40 @@ function renderNotices() {
   const groupedNotices = groupNoticesByDate(sortNoticesByPostedDate(filteredNotices));
   noticeGrid.innerHTML = renderNoticeDateSections(groupedNotices);
   renderDateJump(groupedNotices);
+}
+
+function renderRegionalNotices() {
+  if (!regionalGrid || !regionalCount || !regionalRegionFilter) {
+    return;
+  }
+
+  if (!state.loadedRegionalNotices) {
+    regionalGrid.innerHTML = '<p class="empty-state">지역공고를 불러오는 중입니다.</p>';
+    regionalCount.textContent = "0건";
+    return;
+  }
+
+  const searchTokens = parseSearchTokens(state.regionalSearchQuery);
+  const filteredNotices = state.regionalNotices.filter((notice) => {
+    const region = notice.region || "지역 미상";
+    const matchesRegion = state.selectedRegion === "all" || region === state.selectedRegion;
+    const matchesSearch = matchesNoticeSearch(notice, searchTokens);
+    return matchesRegion && matchesSearch;
+  });
+
+  regionalCount.textContent = `${filteredNotices.length}건`;
+
+  for (const button of regionalRegionFilter.querySelectorAll(".filter-chip")) {
+    button.classList.toggle("active", button.dataset.region === state.selectedRegion);
+  }
+
+  if (filteredNotices.length === 0) {
+    regionalGrid.innerHTML = '<p class="empty-state">표시할 지역공고가 없습니다.</p>';
+    return;
+  }
+
+  const groupedNotices = groupNoticesByDate(sortNoticesByPostedDate(filteredNotices));
+  regionalGrid.innerHTML = renderNoticeDateSections(groupedNotices);
 }
 
 function renderBookmarks() {
@@ -700,6 +833,14 @@ function updateExpiredSearchClear() {
   expiredSearchClear.hidden = state.expiredSearchQuery.trim() === "";
 }
 
+function updateRegionalSearchClear() {
+  if (!regionalSearchClear) {
+    return;
+  }
+
+  regionalSearchClear.hidden = state.regionalSearchQuery.trim() === "";
+}
+
 function renderNoticeDateSections(groupedNotices) {
   return groupedNotices
     .map(
@@ -962,6 +1103,22 @@ function renderNoticeDetail(notice) {
         <dd>${escapeHtml(deadlineText)}</dd>
       </div>
       ${
+        notice.region
+          ? `<div>
+              <dt>지역</dt>
+              <dd>${escapeHtml(notice.region)}</dd>
+            </div>`
+          : ""
+      }
+      ${
+        notice.agency
+          ? `<div>
+              <dt>수행기관</dt>
+              <dd>${escapeHtml(notice.agency)}</dd>
+            </div>`
+          : ""
+      }
+      ${
         fetchedAt
           ? `<div>
               <dt>상세 수집</dt>
@@ -1001,7 +1158,7 @@ function renderNoticeDetail(notice) {
     }
     <div class="notice-detail-actions">
       ${
-        notice.expired
+        notice.expired || isRegionalNotice(notice)
           ? ""
           : `<button class="notice-expire-button" type="button" data-force-expire-key="${escapeAttribute(getNoticeKey(notice))}">
               마감시키기
@@ -1010,7 +1167,7 @@ function renderNoticeDetail(notice) {
       <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
     </div>
     ${
-      notice.expired
+      notice.expired || isRegionalNotice(notice)
         ? ""
         : `<div class="notice-expire-confirm" hidden>
             <strong>이 공고를 정말 마감 처리할까요?</strong>
@@ -1034,8 +1191,14 @@ function buildFallbackSummary(notice) {
   return `${source}에서 수집한 공고입니다. 상세 요약은 아직 수집되지 않았으며, 등록일은 ${notice.posted_at}, 마감일은 ${deadlineText}입니다. 원문 공고에서 지원 대상과 신청 방법을 확인하세요.`;
 }
 
+function isRegionalNotice(notice) {
+  return notice.source === "bizinfo_region" || Boolean(notice.region);
+}
+
 function findNoticeByKey(key) {
-  return [...state.notices, ...state.expiredNotices, ...state.bookmarks].find((item) => getNoticeKey(item) === key);
+  return [...state.notices, ...state.expiredNotices, ...state.regionalNotices, ...state.bookmarks].find(
+    (item) => getNoticeKey(item) === key,
+  );
 }
 
 async function toggleNoticeMark(notice) {
@@ -1287,6 +1450,9 @@ function matchesNoticeSearch(notice, searchTokens) {
   const searchable = normalizeSearchText(
     [
       notice.title,
+      notice.region,
+      notice.agency,
+      notice.department,
       notice.summary,
       notice.ai_deadline_text,
       ...(notice.keywords ?? []),

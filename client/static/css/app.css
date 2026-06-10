@@ -690,6 +690,27 @@ body.modal-open {
   background: #f0f4f8;
 }
 
+.regional-view .page-header::before {
+  background: #7c3aed;
+}
+
+.regional-view .count-badge {
+  border-color: #ddd6fe;
+  color: #6d28d9;
+  background: #f3f0ff;
+}
+
+.regional-view .filter-chip.active {
+  border-color: #7c3aed;
+  color: #6d28d9;
+  background: #f3f0ff;
+}
+
+.regional-view .search-input:focus {
+  border-color: #7c3aed;
+  outline-color: #ede9fe;
+}
+
 .date-jump {
   position: fixed;
   top: 154px;

@@ -48,6 +48,30 @@ def normalize_notice(notice: Notice) -> Notice:
         ai_deadline_confidence = notice.get("ai_deadline_confidence")
         normalized["ai_deadline_confidence"] = str(ai_deadline_confidence).strip() if ai_deadline_confidence else None
 
+    for field in (
+        "region",
+        "category",
+        "application_period",
+        "application_start_at",
+        "application_end_at",
+        "department",
+        "agency",
+        "pblanc_id",
+        "apply_method",
+        "contact",
+    ):
+        if field in notice:
+            value = notice.get(field)  # type: ignore[literal-required]
+            normalized[field] = str(value).strip() if value else None  # type: ignore[literal-required]
+
+    if "views" in notice:
+        views = notice.get("views")
+        normalized["views"] = int(views) if isinstance(views, int) else None
+
+    if "attachments" in notice:
+        attachments = notice.get("attachments") or []
+        normalized["attachments"] = [item for item in attachments if isinstance(item, dict)]
+
     return normalized
 
 
@@ -138,6 +162,18 @@ def _merge_notice_detail_fields(existing: Notice | None, incoming: Notice) -> No
         "ai_deadline",
         "ai_deadline_text",
         "ai_deadline_confidence",
+        "region",
+        "category",
+        "application_period",
+        "application_start_at",
+        "application_end_at",
+        "department",
+        "agency",
+        "pblanc_id",
+        "views",
+        "apply_method",
+        "contact",
+        "attachments",
     ):
         if field not in merged and field in existing:
             merged[field] = existing[field]  # type: ignore[literal-required]

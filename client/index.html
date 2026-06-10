@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>정부지원사업 스크래퍼</title>
-    <link rel="stylesheet" href="/static/css/app.css?v=date-jump-clean-1" />
+    <link rel="stylesheet" href="/static/css/app.css?v=regional-page-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -18,6 +18,10 @@
           <a class="nav-item" href="#notices">
             <span class="nav-icon" aria-hidden="true">□</span>
             <span>공고조회</span>
+          </a>
+          <a class="nav-item" href="#regional">
+            <span class="nav-icon" aria-hidden="true">⌖</span>
+            <span>지역공고</span>
           </a>
           <a class="nav-item" href="#bookmarks">
             <span class="nav-icon" aria-hidden="true">★</span>
@@ -151,6 +155,39 @@
           <div class="notice-grid" id="notice-grid"></div>
         </section>
 
+        <section class="view notices-view regional-view" data-view="regional" hidden>
+          <div class="page-header">
+            <div>
+              <h1>지역공고</h1>
+              <p class="page-description">기업마당 지역 중심 공고를 정보 수집용으로 따로 확인합니다.</p>
+            </div>
+            <span class="count-badge" id="regional-count">0건</span>
+          </div>
+
+          <div class="notice-command-bar">
+            <div class="filter-bar" id="regional-region-filter" aria-label="지역 필터">
+              <button class="filter-chip active" type="button" data-region="all">전체</button>
+            </div>
+
+            <div class="search-panel" aria-label="지역공고 검색">
+              <div class="search-row">
+                <input
+                  class="search-input"
+                  id="regional-search"
+                  type="search"
+                  placeholder="키워드 검색, 공백으로 여러 단어"
+                  autocomplete="off"
+                />
+                <button class="search-clear" id="regional-search-clear" type="button" aria-label="검색어 지우기" hidden>
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="notice-grid" id="regional-grid"></div>
+        </section>
+
         <section class="view" data-view="expired" hidden>
           <div class="page-header">
             <div>
@@ -239,6 +276,6 @@
         <div class="notice-modal-content" id="notice-modal-content"></div>
       </section>
     </div>
-    <script src="/static/js/app.js?v=date-jump-clean-1"></script>
+    <script src="/static/js/app.js?v=regional-page-1"></script>
   </body>
 </html>
