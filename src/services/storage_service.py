@@ -220,7 +220,16 @@ def split_by_deadline(
 def notice_expires_at(notice: Notice, no_deadline_expire_days: int = 60) -> date | None:
     deadline_value = notice.get("deadline")
     if deadline_value:
-        return date.fromisoformat(str(deadline_value))
+        deadline = _parse_notice_date(deadline_value)
+        if deadline:
+            return deadline
+
+    ai_deadline_value = notice.get("ai_deadline")
+    ai_deadline_confidence = str(notice.get("ai_deadline_confidence") or "").strip().lower()
+    if ai_deadline_value and ai_deadline_confidence == "high":
+        ai_deadline = _parse_notice_date(ai_deadline_value)
+        if ai_deadline:
+            return ai_deadline
 
     base_date = _parse_notice_date(notice.get("posted_at")) or _parse_notice_date(notice.get("scraped_at"))
     if base_date is None:

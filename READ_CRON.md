@@ -29,6 +29,11 @@
 
 ## 4. 매일 오전 10시 공고 수집 등록
 
+- 마감 정렬: 매일 새벽 1시에 일반/지역공고의 마감 공고 이동
+  ```cron
+  0 1 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && uv run python scripts/align_expired.py >> logs/cron-align-expired.log 2>&1
+  ```
+
 - 일반 공고: 어제~오늘 등록 공고 수집
   ```cron
   0 10 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" >> logs/cron-scraping.log 2>&1
@@ -50,6 +55,11 @@
 
 ## 6. 로그 확인
 
+- 마감 정렬 로그:
+  ```bash
+  tail -f logs/cron-align-expired.log
+  ```
+
 - 일반 공고 로그:
   ```bash
   tail -f logs/cron-scraping.log
@@ -64,3 +74,4 @@
 
 - cron에서는 `%`가 특수문자라 `date +\%F`처럼 escape 해야 한다.
 - cron 환경에서는 PATH가 짧을 수 있다. `uv`를 찾지 못하면 `which uv`로 절대경로를 확인한 뒤 cron 명령의 `uv`를 절대경로로 바꾼다.
+- AI 추정 마감일은 신뢰도가 `high`인 값만 자동 마감 정렬에 사용한다.

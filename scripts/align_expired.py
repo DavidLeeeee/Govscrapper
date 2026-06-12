@@ -14,10 +14,16 @@ def main() -> None:
     lock_path = settings.runtime_dir / "locks" / "align.lock"
 
     with file_lock(lock_path):
-        result = align_expired_notices(
-            settings.data_dir,
-            no_deadline_expire_days=settings.no_deadline_expire_days,
-        )
+        result = {
+            "main": align_expired_notices(
+                settings.data_dir,
+                no_deadline_expire_days=settings.no_deadline_expire_days,
+            ),
+            "regional": align_expired_notices(
+                settings.data_dir / "regional",
+                no_deadline_expire_days=settings.no_deadline_expire_days,
+            ),
+        }
         print(result)
 
 

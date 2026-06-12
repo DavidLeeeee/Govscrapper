@@ -159,7 +159,7 @@ def summarize_notices(
     for notice in notices:
         updated = _copy_existing_summary(notice, existing_by_key.get(notice_key(notice)))
         if not force and _has_summary(updated):
-            if not updated.get("deadline") and not updated.get("ai_deadline"):
+            if not updated.get("deadline"):
                 _emit_progress(on_progress, f"  - 기존 요약 공고 마감일 보강: {updated.get('title', '')}")
                 try:
                     detail_text = fetch_notice_detail_text(updated)

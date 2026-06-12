@@ -26,7 +26,7 @@
 - 핫리로드 서버 실행: `uv run uvicorn src.server:start_app --factory --reload --host 0.0.0.0 --port 8000`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
-- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-11 --end-date 2026-06-12`
+- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-05-20 --end-date 2026-06-12`
 <!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->
 <!-- - IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5` -->
 
@@ -34,7 +34,7 @@
 - 특정 source만 요약 실행: `uv run python scripts/summarize_notices.py --source iris_btin_situ --limit 5`
 - 이미 요약된 공고까지 강제 재요약: `uv run python scripts/summarize_notices.py --source iris_btin_situ --limit 5 --force`
 
-- 마감공고 정렬/이동 실행: `uv run python scripts/align_expired.py`
+- 일반/지역공고 마감 정렬/이동 실행: `uv run python scripts/align_expired.py`
 
 - 키워드 트렌드 수동 생성: `uv run python scripts/generate_trends.py`
 

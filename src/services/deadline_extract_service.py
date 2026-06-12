@@ -69,11 +69,12 @@ def extract_deadline_candidate(text: str) -> DeadlineCandidate | None:
     for index, line in enumerate(lines):
         if not line:
             continue
-        if not _is_deadline_line(line):
-            continue
 
         window_lines = lines[index : index + 7]
         window_text = " ".join(window_lines)
+        if not _is_deadline_context(window_text):
+            continue
+
         dates = _extract_dates(window_text)
         if not dates:
             continue
@@ -87,11 +88,9 @@ def extract_deadline_candidate(text: str) -> DeadlineCandidate | None:
     return None
 
 
-def _is_deadline_line(line: str) -> bool:
-    if any(keyword in line for keyword in EXCLUDED_KEYWORDS):
-        return False
-
-    return any(keyword in line for keyword in DEADLINE_KEYWORDS)
+def _is_deadline_context(text: str) -> bool:
+    compact_text = _compact(text)
+    return any(_compact(keyword) in compact_text for keyword in DEADLINE_KEYWORDS)
 
 
 def _extract_dates(line: str) -> list[date]:
@@ -127,6 +126,10 @@ def _parse_match_date(match: re.Match[str], context_year: int | None) -> date | 
 
 def _normalize_line(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
+
+
+def _compact(value: str) -> str:
+    return re.sub(r"\s+", "", value)
 
 
 def _trim_source_text(value: str, max_length: int = 220) -> str:
