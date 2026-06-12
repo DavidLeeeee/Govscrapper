@@ -26,8 +26,9 @@
 - 핫리로드 서버 실행: `uv run uvicorn src.server:start_app --factory --reload --host 0.0.0.0 --port 8000`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
-- 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`
-- IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5`
+- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-11 --end-date 2026-06-12`
+<!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->
+<!-- - IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5` -->
 
 - 저장된 active 공고 요약 실행: `uv run python scripts/summarize_notices.py --limit 5`
 - 특정 source만 요약 실행: `uv run python scripts/summarize_notices.py --source iris_btin_situ --limit 5`
@@ -40,3 +41,5 @@
 - 지역공고 오늘 수집 실행: `uv run python scripts/run_regional_scraping.py`
 - 지역공고 기간 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5`
 - 지역공고 상세 포함 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5 --with-detail`
+- cron용 어제~오늘 공고 수집 실행: `YESTERDAY=$(date -d "yesterday" +%F); TODAY=$(date +%F); uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY"`
+- cron용 어제~오늘 지역공고 수집 실행: `YESTERDAY=$(date -d "yesterday" +%F); TODAY=$(date +%F); uv run python scripts/run_regional_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" --max-pages 5`
