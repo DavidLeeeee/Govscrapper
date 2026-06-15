@@ -770,7 +770,7 @@ function renderShortcutContainer(container) {
           class="shortcut-remove"
           type="button"
           data-keyword="${escapeAttribute(keyword)}"
-          aria-label="${escapeAttribute(keyword)} shortcut 삭제"
+          aria-label="${escapeAttribute(keyword)} 빠른검색어 삭제"
         >
           ×
         </button>
