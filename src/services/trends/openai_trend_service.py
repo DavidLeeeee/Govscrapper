@@ -6,15 +6,15 @@ from typing import Any
 import requests
 
 from src.contracts.notice import Notice
-from src.services.trends.contracts import EmergingTrendItem, TrendItem, TrendWindowReport
+from src.services.trends.contracts import EmergingTrendItem, MonthlyTrendReport, TrendItem
 
 
 class OpenAITrendAnalyzer:
     def __init__(
         self,
         api_key: str,
-        model: str = "gpt-5-nano",
-        max_output_tokens: int = 900,
+        model: str = "gpt-5.4-mini",
+        max_output_tokens: int = 1200,
         timeout: int = 45,
     ) -> None:
         self.api_key = api_key
@@ -22,25 +22,27 @@ class OpenAITrendAnalyzer:
         self.max_output_tokens = max_output_tokens
         self.timeout = timeout
 
-    def analyze_window(self, notices: list[Notice], months: int) -> TrendWindowReport:
+    def analyze_month(self, notices: list[Notice], month: str) -> MonthlyTrendReport:
         payload = {
             "model": self.model,
             "input": [
                 {
                     "role": "developer",
                     "content": (
-                        "너는 정부지원사업 공고 제목을 보고 기술/개발자가 관심 가질 트렌드를 뽑는 분석가다. "
-                        "일반 단어(지원, 사업, 공고, 재공고, 용역)는 키워드로 뽑지 않는다. "
-                        "공고 제목에서 반복되는 주제어와 새롭게 눈에 띄는 개발 관련 단어를 구분한다. "
+                        "너는 정부지원사업 공고 제목만 보고 해당 월의 기술 트렌드를 분석하는 전문가다. "
+                        "재공고, 재공모, 지원, 사업, 공고, 용역, 위탁연구, 조달입찰공고처럼 행정 절차나 공고 형식을 뜻하는 단어는 핵심 키워드로 뽑지 않는다. "
+                        "AI, 데이터, 보안, 클라우드, 블록체인, PQC, 양자, 반도체, 로봇, 바이오, 디지털트윈처럼 기술/산업의 실제 방향을 드러내는 단어를 우선한다. "
+                        "빈도가 1~2회여도 PQC 같은 구체적이고 중요한 기술어는 developer_emerging_words 또는 trend_notice_words에 포함할 수 있다. "
+                        "trend_notice_words의 count는 제목 목록에서 해당 키워드가 직접 언급되거나 명확히 같은 주제로 언급된 제목 수다. "
                         "응답은 반드시 JSON 스키마를 따른다."
                     ),
                 },
-                {"role": "user", "content": self._build_prompt(notices, months)},
+                {"role": "user", "content": self._build_prompt(notices, month)},
             ],
             "text": {
                 "format": {
                     "type": "json_schema",
-                    "name": "trend_window",
+                    "name": "monthly_trend",
                     "schema": {
                         "type": "object",
                         "additionalProperties": False,
@@ -93,15 +95,20 @@ class OpenAITrendAnalyzer:
         response.raise_for_status()
         parsed = _parse_response(response.json())
         return {
-            "months": months,
+            "month": month,
             "notice_count": len(notices),
             "trend_notice_words": parsed["trend_notice_words"],
             "developer_emerging_words": parsed["developer_emerging_words"],
         }
 
-    def _build_prompt(self, notices: list[Notice], months: int) -> str:
-        lines = [f"분석 기간: 최근 {months}개월", "공고 제목 목록:"]
-        for index, notice in enumerate(notices[:180], start=1):
+    def _build_prompt(self, notices: list[Notice], month: str) -> str:
+        lines = [
+            f"분석 대상 월: {month}",
+            "목표: 이 달 공고 제목들이 보여주는 실질적 기술/산업 흐름을 요약한다.",
+            "주의: 단순히 많이 반복되는 행정 단어가 아니라, 기술 방향을 드러내는 핵심어를 뽑는다.",
+            "공고 제목 목록:",
+        ]
+        for index, notice in enumerate(notices[:260], start=1):
             title = str(notice.get("title") or "").strip()
             posted_at = str(notice.get("posted_at") or "").strip()
             source = str(notice.get("source") or "").strip()

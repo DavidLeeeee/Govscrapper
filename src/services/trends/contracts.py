@@ -14,8 +14,9 @@ class EmergingTrendItem(TypedDict):
     reason: str
 
 
-class TrendWindowReport(TypedDict):
-    months: int
+class MonthlyTrendReport(TypedDict):
+    month: str
+    generated_at: str
     notice_count: int
     trend_notice_words: list[TrendItem]
     developer_emerging_words: list[EmergingTrendItem]
@@ -24,4 +25,5 @@ class TrendWindowReport(TypedDict):
 class TrendReport(TypedDict):
     generated_at: str
     source: Literal["openai"]
-    windows: dict[str, TrendWindowReport]
+    months: dict[str, MonthlyTrendReport]
+    available_months: list[str]

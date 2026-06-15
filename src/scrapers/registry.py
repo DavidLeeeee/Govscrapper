@@ -5,14 +5,30 @@ from src.scrapers._seoul import SeoulRndScraper
 from src.scrapers.scrap_interface import Scraper
 
 
-SCRAPER_INSTANCES: list[Scraper] = [
-    IrisBtinSituScraper(),
-    KisaBidScraper(),
-    NiaBidScraper(),
-    SeoulRndScraper(),
-]
+def build_scraper_instances(max_pages: int | None = None) -> list[Scraper]:
+    if max_pages is None:
+        return [
+            IrisBtinSituScraper(),
+            KisaBidScraper(),
+            NiaBidScraper(),
+            SeoulRndScraper(),
+        ]
 
-SCRAPERS = {
-    scraper.target.source_name: scraper.scrape
-    for scraper in SCRAPER_INSTANCES
-}
+    return [
+        IrisBtinSituScraper(max_pages=max_pages),
+        KisaBidScraper(max_pages=max_pages),
+        NiaBidScraper(max_pages=max_pages),
+        SeoulRndScraper(max_pages=max_pages),
+    ]
+
+
+def build_scrapers(max_pages: int | None = None) -> dict[str, Scraper]:
+    return {
+        scraper.target.source_name: scraper.scrape
+        for scraper in build_scraper_instances(max_pages=max_pages)
+    }
+
+
+SCRAPER_INSTANCES: list[Scraper] = build_scraper_instances()
+
+SCRAPERS = build_scrapers()

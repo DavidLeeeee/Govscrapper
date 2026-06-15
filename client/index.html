@@ -72,13 +72,12 @@
             <div class="trend-header">
               <div>
                 <h2>키워드 트렌드</h2>
-                <p>공고 제목과 요약에서 자주 등장하는 주제입니다.</p>
+                <p>월별 공고 제목에서 뽑은 기술 흐름입니다.</p>
               </div>
-              <div class="trend-tabs" id="trend-tabs">
-                <button class="trend-tab active" type="button" data-months="1">1개월</button>
-                <button class="trend-tab" type="button" data-months="2">2개월</button>
-                <button class="trend-tab" type="button" data-months="6">6개월</button>
-              </div>
+              <label class="trend-month-picker">
+                <span>기준 월</span>
+                <select id="trend-month-select" aria-label="트렌드 기준 월"></select>
+              </label>
             </div>
             <div class="trend-list" id="trend-list"></div>
           </section>

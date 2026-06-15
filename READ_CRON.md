@@ -39,6 +39,11 @@
   0 10 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && uv run python scripts/run_daily_scraping_notify.py >> logs/cron-daily-notify.log 2>&1
   ```
 
+- 월간 키워드 트렌드 생성: 매월 1일 새벽 1시 10분에 직전 월 공고 제목 분석
+  ```cron
+  10 1 1 * * cd /path/to/03_GOV_BUIS_SCRAPPER && uv run python scripts/generate_trends.py >> logs/cron-generate-trends.log 2>&1
+  ```
+
 `/path/to/03_GOV_BUIS_SCRAPPER`는 실제 프로젝트 경로로 바꾼다.
 Google Chat 알림을 보내려면 `.env`에 `CHAT_API_URL`을 설정한다.
 
@@ -59,6 +64,11 @@ Google Chat 알림을 보내려면 `.env`에 `CHAT_API_URL`을 설정한다.
 - 수집/알림 로그:
   ```bash
   tail -f logs/cron-daily-notify.log
+  ```
+
+- 월간 트렌드 생성 로그:
+  ```bash
+  tail -f logs/cron-generate-trends.log
   ```
 
 - 최근 알림 원본 JSON:

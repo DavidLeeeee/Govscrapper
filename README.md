@@ -31,6 +31,8 @@
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
 - 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-05-22 --end-date 2026-05-29`
+- 2025-01~2026-05 제목용 빠른 백필(AI 요약 제외, Linux): `SUMMARIZE_NOTICES=false uv run python scripts/run_scraping.py --start-date 2025-01-01 --end-date 2026-05-31 --max-pages 500`
+- 2025-01~2026-05 제목용 빠른 백필(AI 요약 제외, PowerShell): `$env:SUMMARIZE_NOTICES="false"; uv run python scripts/run_scraping.py --start-date 2025-01-01 --end-date 2026-05-31 --max-pages 500`
 <!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->
 <!-- - IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5` -->
 
@@ -40,7 +42,10 @@
 
 - 일반/지역공고 마감 정렬/이동 실행: `uv run python scripts/align_expired.py`
 
-- 키워드 트렌드 수동 생성: `uv run python scripts/generate_trends.py`
+- 직전 월 키워드 트렌드 생성: `uv run python scripts/generate_trends.py`
+- 특정 월 키워드 트렌드 생성: `uv run python scripts/generate_trends.py --month 2026-06`
+- 2025-01~2026-05 월별 키워드 트렌드 생성: `uv run python scripts/generate_trends.py --start-month 2025-01 --end-month 2026-05`
+- 특정 월 키워드 트렌드 강제 재생성: `uv run python scripts/generate_trends.py --month 2026-06 --force`
 
 - 지역공고 오늘 수집 실행: `uv run python scripts/run_regional_scraping.py`
 - 지역공고 기간 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5`
@@ -60,4 +65,5 @@
 ```cron
 0 1 * * * cd /home/shield/govscraper/Govscrapper && /home/shield/.local/bin/uv run python scripts/align_expired.py >> logs/cron-align-expired.log 2>&1
 0 10 * * * cd /home/shield/govscraper/Govscrapper && /home/shield/.local/bin/uv run python scripts/run_daily_scraping_notify.py >> logs/cron-daily-notify.log 2>&1
+10 1 1 * * cd /home/shield/govscraper/Govscrapper && /home/shield/.local/bin/uv run python scripts/generate_trends.py >> logs/cron-generate-trends.log 2>&1
 ```

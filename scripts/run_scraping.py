@@ -6,13 +6,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.scrapers.registry import SCRAPERS
+from src.scrapers.registry import SCRAPERS, build_scrapers
 from src.contracts.scrape_options import ScrapeOptions
 from src.services.file_lock import file_lock
 from src.services.scraping_service import run_scraping
 from src.services.summarization_service import build_openai_summarizer
-from src.services.trends.openai_trend_service import OpenAITrendAnalyzer
-from src.services.trends.trend_service import generate_and_store_trends
 from src.settings import get_settings
 
 
@@ -37,25 +35,12 @@ def main() -> None:
 
         result = run_scraping(
             data_dir=settings.data_dir,
-            scrapers=SCRAPERS,
+            scrapers=build_scrapers(max_pages=args.max_pages) if args.max_pages else SCRAPERS,
             options=options,
             google_chat_webhook_url=None,
             summarizer=summarizer,
             on_summary_progress=lambda message: print(message, flush=True),
         )
-        if settings.generate_trends_after_scraping:
-            if not settings.openai_api_key:
-                raise RuntimeError("GENERATE_TRENDS_AFTER_SCRAPING=true 이지만 OPENAI_API_KEY가 .env에 설정되어 있지 않습니다.")
-            print("[trends] 키워드 트렌드 생성 시작", flush=True)
-            trend_report = generate_and_store_trends(
-                settings.data_dir,
-                OpenAITrendAnalyzer(
-                    api_key=settings.openai_api_key,
-                    model=settings.openai_trend_model,
-                ),
-            )
-            result["trends_generated_at"] = trend_report["generated_at"]
-
         print(result)
 
 
@@ -63,6 +48,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="등록된 스크래퍼를 실행해 파일 저장소에 반영한다.")
     parser.add_argument("--start-date", help="수집 시작 등록일. 예: 2026-06-11")
     parser.add_argument("--end-date", help="수집 종료 등록일. 기본값: start-date 또는 오늘")
+    parser.add_argument("--max-pages", type=int, help="각 사이트에서 조회할 최대 페이지 수. 긴 백필에서는 크게 지정한다.")
     return parser.parse_args()
 
 

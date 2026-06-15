@@ -24,8 +24,7 @@ class Settings:
     no_deadline_expire_days: int = 60
     openai_api_key: str | None = None
     openai_summary_model: str = "gpt-5-nano"
-    openai_trend_model: str = "gpt-5-nano"
-    generate_trends_after_scraping: bool = False
+    openai_trend_model: str = "gpt-5.4-mini"
     summarize_notices: bool = False
     summary_max_detail_chars: int = 4000
     summary_max_output_tokens: int = 700
@@ -43,8 +42,7 @@ def get_settings() -> Settings:
         no_deadline_expire_days=int(os.getenv("NO_DEADLINE_EXPIRE_DAYS", "60")),
         openai_api_key=os.getenv("OPENAI_API_KEY") or None,
         openai_summary_model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-5-nano"),
-        openai_trend_model=os.getenv("OPENAI_TREND_MODEL", os.getenv("OPENAI_SUMMARY_MODEL", "gpt-5-nano")),
-        generate_trends_after_scraping=_read_bool(os.getenv("GENERATE_TRENDS_AFTER_SCRAPING")),
+        openai_trend_model=os.getenv("OPENAI_TREND_MODEL", "gpt-5.4-mini"),
         summarize_notices=_read_bool(os.getenv("SUMMARIZE_NOTICES")),
         summary_max_detail_chars=int(os.getenv("SUMMARY_MAX_DETAIL_CHARS", "4000")),
         summary_max_output_tokens=int(os.getenv("SUMMARY_MAX_OUTPUT_TOKENS", "700")),

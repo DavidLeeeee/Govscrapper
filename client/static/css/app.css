@@ -273,32 +273,25 @@ body.modal-open {
   font-size: 13px;
 }
 
-.trend-tabs {
+.trend-month-picker {
   display: flex;
   flex: 0 0 auto;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 8px;
-  background: #eef2f6;
-}
-
-.trend-tab {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 6px;
+  align-items: center;
+  gap: 8px;
   color: #52616f;
-  background: transparent;
-  font: inherit;
   font-size: 12px;
   font-weight: 800;
-  cursor: pointer;
 }
 
-.trend-tab.active {
-  color: #0f766e;
+.trend-month-picker select {
+  min-height: 34px;
+  padding: 0 32px 0 12px;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  color: #102a43;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(16, 42, 67, 0.12);
+  font: inherit;
+  cursor: pointer;
 }
 
 .trend-list {
@@ -306,7 +299,33 @@ body.modal-open {
   gap: 14px;
 }
 
-.trend-generated {
+.trend-month-card {
+  display: grid;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid #e6edf3;
+}
+
+.trend-month-card:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.trend-month-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trend-month-card-header h3 {
+  margin: 0;
+  color: #102a43;
+  font-size: 16px;
+}
+
+.trend-month-card-header p {
+  margin: 5px 0 0;
   color: #829ab1;
   font-size: 12px;
   font-weight: 800;
@@ -1664,12 +1683,9 @@ body.modal-open {
     flex-direction: column;
   }
 
-  .trend-tabs {
+  .trend-month-picker,
+  .trend-month-picker select {
     width: 100%;
-  }
-
-  .trend-tab {
-    flex: 1;
   }
 
   .trend-item {

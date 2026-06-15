@@ -34,7 +34,7 @@ const followInput = document.querySelector("#follow-input");
 const followKeywords = document.querySelector("#follow-keywords");
 const followMatchCount = document.querySelector("#follow-match-count");
 const homeMatchList = document.querySelector("#home-match-list");
-const trendTabs = document.querySelector("#trend-tabs");
+const trendMonthSelect = document.querySelector("#trend-month-select");
 const trendList = document.querySelector("#trend-list");
 const noticeModal = document.querySelector("#notice-modal");
 const noticeModalPanel = document.querySelector(".notice-modal-panel");
@@ -62,7 +62,7 @@ const state = {
   regionalSearchQuery: "",
   followKeywords: readFollowKeywords(),
   searchShortcuts: readSearchShortcuts(),
-  trendMonths: 1,
+  selectedTrendMonth: "",
   loadingNotices: false,
   loadedNotices: false,
   loadingRegionalNotices: false,
@@ -237,15 +237,11 @@ if (regionalDateJump) {
   regionalDateJump.addEventListener("click", handleDateJumpClick);
 }
 
-if (trendTabs) {
-  trendTabs.addEventListener("click", (event) => {
-    const button = event.target.closest(".trend-tab");
-    if (!button) {
-      return;
-    }
-
-    state.trendMonths = Number(button.dataset.months || "1");
-    renderTrendPanel();
+if (trendMonthSelect) {
+  trendMonthSelect.addEventListener("change", () => {
+    state.selectedTrendMonth = trendMonthSelect.value;
+    state.loadedTrends = false;
+    loadTrends();
   });
 }
 
@@ -274,20 +270,23 @@ async function loadTrends() {
   renderTrendPanel();
 
   try {
-    const response = await fetch("/api/trends");
+    const query = state.selectedTrendMonth ? `?month=${encodeURIComponent(state.selectedTrendMonth)}` : "";
+    const response = await fetch(`/api/trends${query}`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
 
     state.trends = await response.json();
+    if (!state.selectedTrendMonth) {
+      state.selectedTrendMonth = state.trends?.available_months?.[0] ?? "";
+    }
     state.loadedTrends = true;
-    renderTrendPanel();
   } catch {
     state.trends = null;
     state.loadedTrends = true;
-    renderTrendPanel();
   } finally {
     state.loadingTrends = false;
+    renderTrendPanel();
   }
 }
 
@@ -628,27 +627,53 @@ function renderHome() {
 }
 
 function renderTrendPanel() {
-  if (!trendList || !trendTabs) {
+  if (!trendList || !trendMonthSelect) {
     return;
   }
 
-  for (const button of trendTabs.querySelectorAll(".trend-tab")) {
-    button.classList.toggle("active", Number(button.dataset.months) === state.trendMonths);
-  }
-
   if (state.loadingTrends || !state.loadedTrends) {
+    renderTrendMonthOptions();
     trendList.innerHTML = '<p class="home-empty">트렌드를 불러오는 중입니다.</p>';
     return;
   }
 
-  const windowReport = state.trends?.windows?.[String(state.trendMonths)];
-  if (!windowReport) {
+  renderTrendMonthOptions();
+
+  const monthlyReports = state.trends?.months ?? {};
+  const months = Object.keys(monthlyReports).sort().reverse();
+  if (months.length === 0) {
     trendList.innerHTML = '<p class="home-empty">표시할 키워드 트렌드가 없습니다.</p>';
     return;
   }
 
-  const trends = windowReport.trend_notice_words ?? [];
-  const emergingItems = windowReport.developer_emerging_words ?? [];
+  trendList.innerHTML = months.map((month) => renderMonthlyTrend(month, monthlyReports[month])).join("");
+}
+
+function renderTrendMonthOptions() {
+  if (!trendMonthSelect) {
+    return;
+  }
+
+  const availableMonths = state.trends?.available_months ?? [];
+  if (availableMonths.length === 0) {
+    trendMonthSelect.innerHTML = '<option value="">생성된 월 없음</option>';
+    trendMonthSelect.disabled = true;
+    return;
+  }
+
+  trendMonthSelect.disabled = false;
+  if (!state.selectedTrendMonth || !availableMonths.includes(state.selectedTrendMonth)) {
+    state.selectedTrendMonth = availableMonths[0];
+  }
+
+  trendMonthSelect.innerHTML = availableMonths
+    .map((month) => `<option value="${escapeAttribute(month)}"${month === state.selectedTrendMonth ? " selected" : ""}>${escapeHtml(formatTrendMonth(month))}</option>`)
+    .join("");
+}
+
+function renderMonthlyTrend(month, monthlyReport) {
+  const trends = monthlyReport.trend_notice_words ?? [];
+  const emergingItems = monthlyReport.developer_emerging_words ?? [];
   const maxCount = Math.max(...trends.map((trend) => trend.count), 1);
   const trendItems = trends
     .map((trend) => {
@@ -683,10 +708,17 @@ function renderTrendPanel() {
       `
       : "";
 
-  trendList.innerHTML = `
-    <div class="trend-generated">분석 기준 ${escapeHtml(windowReport.notice_count)}건 · ${escapeHtml(formatTrendGeneratedAt(state.trends?.generated_at))}</div>
+  return `
+    <article class="trend-month-card">
+      <div class="trend-month-card-header">
+        <div>
+          <h3>${escapeHtml(formatTrendMonth(month))}</h3>
+          <p>분석 기준 ${escapeHtml(monthlyReport.notice_count)}건 · ${escapeHtml(formatTrendGeneratedAt(monthlyReport.generated_at))}</p>
+        </div>
+      </div>
     <div class="trend-items">${trendItems || '<p class="home-empty">트렌드 공고 단어가 없습니다.</p>'}</div>
     ${emergingMarkup}
+    </article>
   `;
 }
 
@@ -1562,6 +1594,14 @@ function formatTrendGeneratedAt(value) {
   }
 
   return formatDateTime(value);
+}
+
+function formatTrendMonth(value) {
+  const [year, month] = String(value || "").split("-");
+  if (!year || !month) {
+    return String(value || "");
+  }
+  return `${year}년 ${Number(month)}월`;
 }
 
 function getNoticeKey(notice) {
