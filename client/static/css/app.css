@@ -296,19 +296,22 @@ body.modal-open {
 
 .trend-list {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .trend-month-card {
   display: grid;
-  gap: 14px;
-  padding-top: 16px;
-  border-top: 1px solid #e6edf3;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding-right: 16px;
+  border-right: 1px solid #e6edf3;
 }
 
-.trend-month-card:first-child {
-  padding-top: 0;
-  border-top: 0;
+.trend-month-card:last-child {
+  padding-right: 0;
+  border-right: 0;
 }
 
 .trend-month-card-header {
@@ -321,28 +324,28 @@ body.modal-open {
 .trend-month-card-header h3 {
   margin: 0;
   color: #102a43;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .trend-month-card-header p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: #829ab1;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .trend-items {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .trend-item {
   display: grid;
-  grid-template-columns: 120px minmax(80px, 1fr) 52px;
-  gap: 12px;
+  grid-template-columns: minmax(64px, 0.9fr) minmax(48px, 1fr) 38px;
+  gap: 8px;
   align-items: center;
   width: 100%;
-  min-height: 34px;
+  min-height: 28px;
   padding: 0;
   border: 0;
   color: inherit;
@@ -359,14 +362,14 @@ body.modal-open {
 .trend-name {
   overflow: hidden;
   color: #243b53;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .trend-bar {
-  height: 8px;
+  height: 6px;
   overflow: hidden;
   border-radius: 999px;
   background: #e6edf3;
@@ -381,21 +384,21 @@ body.modal-open {
 
 .trend-count {
   color: #627d98;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   text-align: right;
 }
 
 .trend-emerging {
   display: grid;
-  gap: 10px;
-  padding-top: 2px;
+  gap: 7px;
+  padding-top: 0;
 }
 
 .trend-emerging h3 {
   margin: 0;
   color: #334e68;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .trend-emerging-list {
@@ -405,14 +408,14 @@ body.modal-open {
 }
 
 .trend-emerging-chip {
-  min-height: 28px;
-  padding: 0 9px;
+  min-height: 24px;
+  padding: 0 8px;
   border: 0;
   border-radius: 999px;
   color: #0f766e;
   background: #dff5f1;
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -1703,6 +1706,22 @@ body.modal-open {
   .trend-month-picker,
   .trend-month-picker select {
     width: 100%;
+  }
+
+  .trend-list {
+    grid-template-columns: 1fr;
+  }
+
+  .trend-month-card {
+    padding-right: 0;
+    padding-bottom: 14px;
+    border-right: 0;
+    border-bottom: 1px solid #e6edf3;
+  }
+
+  .trend-month-card:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 
   .trend-item {

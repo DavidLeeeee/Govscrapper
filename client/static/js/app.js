@@ -701,8 +701,8 @@ function renderTrendMonthOptions() {
 }
 
 function renderMonthlyTrend(month, monthlyReport) {
-  const trends = monthlyReport.trend_notice_words ?? [];
-  const emergingItems = monthlyReport.developer_emerging_words ?? [];
+  const trends = (monthlyReport.trend_notice_words ?? []).slice(0, 5);
+  const emergingItems = (monthlyReport.developer_emerging_words ?? []).slice(0, 4);
   const maxCount = Math.max(...trends.map((trend) => trend.count), 1);
   const trendItems = trends
     .map((trend) => {
@@ -721,7 +721,7 @@ function renderMonthlyTrend(month, monthlyReport) {
     emergingItems.length > 0
       ? `
         <div class="trend-emerging">
-          <h3>개발 관련 신규 단어 소식</h3>
+          <h3>개발 신규 단어</h3>
           <div class="trend-emerging-list">
             ${emergingItems
               .map(
