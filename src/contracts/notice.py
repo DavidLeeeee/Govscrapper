@@ -13,6 +13,8 @@ class Notice(TypedDict):
     keywords: list[str]
     summary: NotRequired[str | None]
     detail_points: NotRequired[list[str]]
+    budget: NotRequired[str | None]
+    budget_text: NotRequired[str | None]
     detail_fetched_at: NotRequired[str | None]
     ai_deadline: NotRequired[str | None]
     ai_deadline_text: NotRequired[str | None]
@@ -47,6 +49,8 @@ class MarkRecord(TypedDict):
 class NoticeSummary(TypedDict):
     summary: str
     detail_points: list[str]
+    budget: str | None
+    budget_text: str | None
     ai_deadline: str | None
     ai_deadline_text: str | None
     ai_deadline_confidence: str

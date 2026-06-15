@@ -928,6 +928,7 @@ function renderNoticeCard(notice, options = {}) {
   const deadlineValue = getDisplayDeadline(notice);
   const deadlineLabel = deadlineValue ? getDeadlineLabel(deadlineValue) : "";
   const deadlineText = getDisplayDeadlineText(notice);
+  const budgetText = getBudgetText(notice);
   const noticeKey = getNoticeKey(notice);
   const markLabel = notice.marked ? "북마크 해제" : "북마크";
   const markClass = notice.marked ? "mark-button marked" : "mark-button";
@@ -964,6 +965,10 @@ function renderNoticeCard(notice, options = {}) {
         <div>
           <dt>마감일</dt>
           <dd>${escapeHtml(deadlineText)}</dd>
+        </div>
+        <div>
+          <dt>예산액</dt>
+          <dd>${escapeHtml(budgetText)}</dd>
         </div>
       </dl>
     </article>
@@ -1085,7 +1090,7 @@ function renderNoticeDetail(notice) {
   const keywords = Array.isArray(notice.keywords) ? notice.keywords.filter(Boolean) : [];
   const detailPoints = Array.isArray(notice.detail_points) ? notice.detail_points.filter(Boolean) : [];
   const summary = String(notice.summary ?? "").trim();
-  const fetchedAt = notice.detail_fetched_at ? formatDateTime(notice.detail_fetched_at) : "";
+  const budgetText = getBudgetText(notice);
 
   return `
     <div class="notice-detail-header">
@@ -1093,6 +1098,10 @@ function renderNoticeDetail(notice) {
       ${deadlineLabel ? `<span class="deadline">${escapeHtml(deadlineLabel)}</span>` : ""}
     </div>
     <h2 id="notice-modal-title">${escapeHtml(notice.title)}</h2>
+    <div class="notice-detail-budget">
+      <span>예산액</span>
+      <strong>${escapeHtml(budgetText)}</strong>
+    </div>
     <dl class="notice-detail-meta">
       <div>
         <dt>등록일</dt>
@@ -1118,27 +1127,11 @@ function renderNoticeDetail(notice) {
             </div>`
           : ""
       }
-      ${
-        fetchedAt
-          ? `<div>
-              <dt>상세 수집</dt>
-              <dd>${escapeHtml(fetchedAt)}</dd>
-            </div>`
-          : ""
-      }
     </dl>
     <section class="notice-detail-section">
       <h3>요약</h3>
       <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
     </section>
-    ${
-      !notice.deadline && notice.ai_deadline_text
-        ? `<section class="notice-detail-section">
-            <h3>마감일 근거</h3>
-            <p>${escapeHtml(notice.ai_deadline_text)} (${escapeHtml(getAiDeadlineConfidenceLabel(notice.ai_deadline_confidence))})</p>
-          </section>`
-        : ""
-    }
     ${
       detailPoints.length > 0
         ? `<section class="notice-detail-section">
@@ -1402,6 +1395,10 @@ function getDisplayDeadlineText(notice) {
   return "확인 필요";
 }
 
+function getBudgetText(notice) {
+  return String(notice.budget ?? "").trim() || "확인 필요";
+}
+
 function getAiDeadlineConfidenceLabel(confidence) {
   if (confidence === "high") {
     return "신뢰도 높음";
@@ -1454,6 +1451,8 @@ function matchesNoticeSearch(notice, searchTokens) {
       notice.agency,
       notice.department,
       notice.summary,
+      notice.budget,
+      notice.budget_text,
       notice.ai_deadline_text,
       ...(notice.keywords ?? []),
       ...(notice.detail_points ?? []),

@@ -32,6 +32,14 @@ def normalize_notice(notice: Notice) -> Notice:
         detail_points = notice.get("detail_points") or []
         normalized["detail_points"] = [str(point).strip() for point in detail_points if str(point).strip()]
 
+    if "budget" in notice:
+        budget = notice.get("budget")
+        normalized["budget"] = str(budget).strip() if budget else None
+
+    if "budget_text" in notice:
+        budget_text = notice.get("budget_text")
+        normalized["budget_text"] = str(budget_text).strip() if budget_text else None
+
     if "detail_fetched_at" in notice:
         fetched_at = notice.get("detail_fetched_at")
         normalized["detail_fetched_at"] = str(fetched_at).strip() if fetched_at else None
@@ -158,6 +166,8 @@ def _merge_notice_detail_fields(existing: Notice | None, incoming: Notice) -> No
     for field in (
         "summary",
         "detail_points",
+        "budget",
+        "budget_text",
         "detail_fetched_at",
         "ai_deadline",
         "ai_deadline_text",

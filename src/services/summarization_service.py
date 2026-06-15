@@ -48,6 +48,8 @@ class OpenAIResponsesSummarizer:
                         "마감일은 신청/접수/공모/입찰/의견제출 마감일을 인정한다. "
                         "사전규격공개, 입찰공고, 제안요청서 공개 공고에서는 '공개기간' 또는 '의견제출 기간'의 종료일을 마감일로 본다. "
                         "사업기간/평가일/설명회 일자는 마감일로 쓰지 않는다. "
+                        "예산은 소요예산, 예산, 사업비, 연구비, 지원금, 과제비, 용역비처럼 금액을 뜻하는 항목만 인정한다. "
+                        "금액은 원문 표현을 유지하고, 없거나 불확실하면 null로 둔다. "
                         "응답은 반드시 JSON 스키마를 따른다."
                     ),
                 },
@@ -75,6 +77,14 @@ class OpenAIResponsesSummarizer:
                                 "minItems": 2,
                                 "maxItems": 4,
                             },
+                            "budget": {
+                                "type": ["string", "null"],
+                                "description": "본문에서 확인되는 소요예산/예산/사업비/연구비/지원금/과제비/용역비 금액. 예: 40,000,000원, 20억원. 없거나 불확실하면 null.",
+                            },
+                            "budget_text": {
+                                "type": ["string", "null"],
+                                "description": "예산 판단에 사용한 원문 문구. 없거나 불확실하면 null.",
+                            },
                             "ai_deadline": {
                                 "type": ["string", "null"],
                                 "description": "본문에서 신청/접수/공모/입찰/의견제출 마감일이 명확히 확인될 때 YYYY-MM-DD 형식으로 반환한다. 사전규격공개는 공개기간 종료일을 사용한다. 없거나 불확실하면 null.",
@@ -92,6 +102,8 @@ class OpenAIResponsesSummarizer:
                         "required": [
                             "summary",
                             "detail_points",
+                            "budget",
+                            "budget_text",
                             "ai_deadline",
                             "ai_deadline_text",
                             "ai_deadline_confidence",
@@ -138,6 +150,8 @@ class EmptySummarizer:
         return {
             "summary": "",
             "detail_points": [],
+            "budget": None,
+            "budget_text": None,
             "ai_deadline": None,
             "ai_deadline_text": None,
             "ai_deadline_confidence": "none",
@@ -201,6 +215,8 @@ def summarize_notices(
             summary = summarizer.summarize(updated, detail_text)
             updated["summary"] = summary["summary"]
             updated["detail_points"] = summary["detail_points"]
+            updated["budget"] = summary["budget"]
+            updated["budget_text"] = summary["budget_text"]
             if deadline_candidate is not None and not updated.get("deadline"):
                 updated["ai_deadline"] = deadline_candidate.deadline
                 updated["ai_deadline_text"] = deadline_candidate.source_text
@@ -246,6 +262,8 @@ def _copy_existing_summary(notice: Notice, existing: Notice | None) -> Notice:
     for field in (
         "summary",
         "detail_points",
+        "budget",
+        "budget_text",
         "detail_fetched_at",
         "ai_deadline",
         "ai_deadline_text",
@@ -258,7 +276,11 @@ def _copy_existing_summary(notice: Notice, existing: Notice | None) -> Notice:
 
 
 def _has_summary(notice: Notice) -> bool:
-    return bool(str(notice.get("summary") or "").strip())
+    return (
+        bool(str(notice.get("summary") or "").strip())
+        and "budget" in notice
+        and "budget_text" in notice
+    )
 
 
 def _parse_summary_response(data: dict[str, Any]) -> NoticeSummary:
@@ -273,6 +295,8 @@ def _parse_summary_response(data: dict[str, Any]) -> NoticeSummary:
         ) from exc
     summary = str(parsed.get("summary") or "").strip()
     detail_points = [str(point).strip() for point in parsed.get("detail_points", []) if str(point).strip()]
+    budget = str(parsed.get("budget") or "").strip() or None
+    budget_text = str(parsed.get("budget_text") or "").strip() or None
     ai_deadline = _normalize_ai_deadline(parsed.get("ai_deadline"))
     ai_deadline_text = str(parsed.get("ai_deadline_text") or "").strip() or None
     ai_deadline_confidence = str(parsed.get("ai_deadline_confidence") or "none").strip().lower()
@@ -284,6 +308,8 @@ def _parse_summary_response(data: dict[str, Any]) -> NoticeSummary:
     return {
         "summary": summary,
         "detail_points": detail_points,
+        "budget": budget,
+        "budget_text": budget_text,
         "ai_deadline": ai_deadline,
         "ai_deadline_text": ai_deadline_text,
         "ai_deadline_confidence": ai_deadline_confidence,

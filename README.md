@@ -30,7 +30,7 @@
 - 서버 백그라운드 중지: `pkill -f "python app.py"`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
-- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-12 --end-date 2026-06-12`
+- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-12 --end-date 2026-06-15`
 <!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->
 <!-- - IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5` -->
 
