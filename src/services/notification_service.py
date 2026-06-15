@@ -72,6 +72,30 @@ def build_daily_scraping_message(
     return "\n".join(lines)
 
 
+def build_shared_notice_message(notice: Notice, share_url: str | None = None) -> str:
+    title = str(notice.get("title") or "제목 없음").strip()
+    source = str(notice.get("source_display_name") or notice.get("source") or "").strip()
+    posted_at = str(notice.get("posted_at") or "확인 필요").strip()
+    deadline = _display_deadline(notice)
+    budget = str(notice.get("budget_text") or notice.get("budget") or "확인 필요").strip()
+    origin_url = str(notice.get("url") or "").strip()
+
+    lines = [
+        "*📌 공고 공유*",
+        _chat_link(share_url, title),
+        "",
+        f"출처: {source or '확인 필요'}",
+        f"등록일: {posted_at}",
+        f"마감일: {deadline}",
+        f"예산액: {budget}",
+    ]
+
+    if origin_url:
+        lines.extend(["", f"원문: {_chat_link(origin_url, '공고 원문 열기')}"])
+
+    return "\n".join(lines)
+
+
 def _count_regions(notices: list[Notice]) -> dict[str, int]:
     counter: Counter[str] = Counter()
     for notice in notices:

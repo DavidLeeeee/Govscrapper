@@ -1474,7 +1474,8 @@ body.modal-open {
 }
 
 .notice-origin-link,
-.notice-expire-button {
+.notice-expire-button,
+.notice-share-button {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
@@ -1503,6 +1504,22 @@ body.modal-open {
 
 .notice-expire-button:hover {
   background: #8a1c13;
+}
+
+.notice-share-button {
+  margin-right: auto;
+  color: #0f5f58;
+  background: #dff5f1;
+}
+
+.notice-share-button:hover {
+  background: #c8eee7;
+}
+
+.notice-share-button:disabled {
+  color: #627d98;
+  background: #eef2f6;
+  cursor: progress;
 }
 
 .notice-expire-confirm {

@@ -4,6 +4,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 
 from src.scrapers.SITES_INFO import ScrapeTarget
+from src.services.notification_service import build_shared_notice_message, send_google_chat_message
 from src.services.marked_service import apply_marked_state, list_marked_notices, mark_notice, unmark_notice
 from src.services.storage_service import manually_expire_notice, merge_notices, notice_key_string, read_json_list, sort_notices
 
@@ -153,3 +154,21 @@ async def expire_notice(request: Request, notice: dict[str, Any]) -> dict[str, A
         "source_display_name": SOURCE_NAMES.get(source, source),
         "expired": True,
     }
+
+
+@router.post("/notices/share")
+async def share_notice(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    settings = request.app.state.settings
+    webhook_url = settings.google_chat_webhook_url
+    if not webhook_url:
+        raise HTTPException(status_code=500, detail="CHAT_API_URL is not configured")
+
+    notice = payload.get("notice")
+    if not isinstance(notice, dict):
+        raise HTTPException(status_code=400, detail="notice is required")
+
+    share_url = str(payload.get("share_url") or "").strip()
+    message = build_shared_notice_message(notice, share_url=share_url or None)
+    send_google_chat_message(webhook_url, message)
+
+    return {"shared": True}

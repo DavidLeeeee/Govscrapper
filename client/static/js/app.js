@@ -67,14 +67,14 @@ const state = {
   loadedNotices: false,
   loadingRegionalNotices: false,
   loadedRegionalNotices: false,
+  activeModalKey: "",
 };
 
 function setActiveNav() {
-  const currentHash = window.location.hash || "#home";
-  const viewName = currentHash.replace("#", "");
+  const { viewName, noticeKey } = parseCurrentHash();
 
   for (const item of navItems) {
-    const isActive = item.getAttribute("href") === currentHash;
+    const isActive = item.getAttribute("href") === `#${viewName}`;
     item.classList.toggle("active", isActive);
 
     if (isActive) {
@@ -114,6 +114,33 @@ function setActiveNav() {
   if (viewName === "home") {
     loadTrends();
     renderHome();
+  }
+
+  if (noticeKey) {
+    openDeepLinkedNotice(noticeKey);
+  }
+}
+
+function parseCurrentHash() {
+  const rawHash = window.location.hash || "#home";
+  const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
+  const [viewPart, queryPart = ""] = hash.split("?");
+  const viewName = viewPart || "home";
+  const params = new URLSearchParams(queryPart);
+  return {
+    viewName,
+    noticeKey: params.get("notice") || "",
+  };
+}
+
+function openDeepLinkedNotice(noticeKey) {
+  if (!noticeKey || state.activeModalKey === noticeKey) {
+    return;
+  }
+
+  const notice = findNoticeByKey(noticeKey);
+  if (notice) {
+    openNoticeModal(notice);
   }
 }
 
@@ -329,6 +356,7 @@ async function loadNotices() {
     renderNotices();
     renderExpiredNotices();
     renderBookmarks();
+    openDeepLinkedNotice(parseCurrentHash().noticeKey);
   } catch {
     noticeGrid.innerHTML = '<p class="empty-state">공고를 불러오지 못했습니다.</p>';
     if (expiredGrid) {
@@ -366,6 +394,7 @@ async function loadRegionalNotices() {
     state.loadedRegionalNotices = true;
     renderRegionalFilters();
     renderRegionalNotices();
+    openDeepLinkedNotice(parseCurrentHash().noticeKey);
   } catch {
     regionalGrid.innerHTML = '<p class="empty-state">지역공고를 불러오지 못했습니다.</p>';
   } finally {
@@ -1091,6 +1120,16 @@ document.addEventListener("click", async (event) => {
   if (event.target.closest("[data-modal-close]")) {
     closeNoticeModal();
     return;
+    }
+
+  const shareButton = event.target.closest("[data-share-key]");
+  if (shareButton) {
+    const notice = findNoticeByKey(shareButton.dataset.shareKey);
+    if (notice && !shareButton.disabled) {
+      shareButton.disabled = true;
+      await shareNotice(notice, shareButton);
+    }
+    return;
   }
 
   const expireButton = event.target.closest("[data-force-expire-key]");
@@ -1151,6 +1190,7 @@ function openNoticeModal(notice) {
 
   noticeModalContent.innerHTML = renderNoticeDetail(notice);
   noticeModal.hidden = false;
+  state.activeModalKey = getNoticeKey(notice);
   document.body.classList.add("modal-open");
   noticeModalPanel.focus();
 }
@@ -1161,6 +1201,7 @@ function closeNoticeModal() {
   }
 
   noticeModal.hidden = true;
+  state.activeModalKey = "";
   document.body.classList.remove("modal-open");
 }
 
@@ -1231,6 +1272,9 @@ function renderNoticeDetail(notice) {
         : ""
     }
     <div class="notice-detail-actions">
+      <button class="notice-share-button" type="button" data-share-key="${escapeAttribute(getNoticeKey(notice))}">
+        공유
+      </button>
       ${
         notice.expired || isRegionalNotice(notice)
           ? ""
@@ -1273,6 +1317,45 @@ function findNoticeByKey(key) {
   return [...state.notices, ...state.expiredNotices, ...state.regionalNotices, ...state.bookmarks].find(
     (item) => getNoticeKey(item) === key,
   );
+}
+
+async function shareNotice(notice, button) {
+  const originalText = button.textContent;
+  button.textContent = "공유 중";
+
+  try {
+    const response = await fetch("/api/notices/share", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        notice,
+        share_url: buildNoticeShareUrl(notice),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    button.textContent = "공유 완료";
+  } catch {
+    button.textContent = "공유 실패";
+  } finally {
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+    }, 1600);
+  }
+}
+
+function buildNoticeShareUrl(notice) {
+  const key = getNoticeKey(notice);
+  const viewName = isRegionalNotice(notice) ? "regional" : "notices";
+  const url = new URL(window.location.href);
+  url.hash = `${viewName}?notice=${encodeURIComponent(key)}`;
+  return url.toString();
 }
 
 async function toggleNoticeMark(notice) {
