@@ -173,7 +173,7 @@ def summarize_notices(
     for notice in notices:
         updated = _copy_existing_summary(notice, existing_by_key.get(notice_key(notice)))
         if not force and _has_summary(updated):
-            if not updated.get("deadline"):
+            if _needs_deadline_boost(updated):
                 _emit_progress(on_progress, f"  - 기존 요약 공고 마감일 보강: {updated.get('title', '')}")
                 try:
                     detail_text = fetch_notice_detail_text(updated)
@@ -281,6 +281,12 @@ def _has_summary(notice: Notice) -> bool:
         and "budget" in notice
         and "budget_text" in notice
     )
+
+
+def _needs_deadline_boost(notice: Notice) -> bool:
+    if notice.get("deadline"):
+        return False
+    return "ai_deadline_confidence" not in notice
 
 
 def _parse_summary_response(data: dict[str, Any]) -> NoticeSummary:
