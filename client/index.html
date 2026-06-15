@@ -74,10 +74,14 @@
                 <h2>키워드 트렌드</h2>
                 <p>월별 공고 제목에서 뽑은 기술 흐름입니다.</p>
               </div>
-              <label class="trend-month-picker">
-                <span>기준 월</span>
-                <select id="trend-month-select" aria-label="트렌드 기준 월"></select>
-              </label>
+              <div class="trend-month-nav" aria-label="트렌드 월 이동">
+                <button class="trend-month-arrow" id="trend-month-newer" type="button" aria-label="더 최신 월 보기">‹</button>
+                <label class="trend-month-picker">
+                  <span>기준 월</span>
+                  <select id="trend-month-select" aria-label="트렌드 기준 월"></select>
+                </label>
+                <button class="trend-month-arrow" id="trend-month-older" type="button" aria-label="더 이전 월 보기">›</button>
+              </div>
             </div>
             <div class="trend-list" id="trend-list"></div>
           </section>

@@ -273,14 +273,49 @@ body.modal-open {
   font-size: 13px;
 }
 
-.trend-month-picker {
+.trend-month-nav {
   display: flex;
   flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.trend-month-picker {
+  display: flex;
   align-items: center;
   gap: 8px;
   color: #52616f;
   font-size: 12px;
   font-weight: 800;
+}
+
+.trend-month-arrow {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  color: #243b53;
+  background: #ffffff;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.trend-month-arrow:hover:not(:disabled) {
+  color: #0f766e;
+  border-color: #9fd8d0;
+  background: #f2fbf9;
+}
+
+.trend-month-arrow:disabled {
+  color: #bcccdc;
+  background: #f6f8fa;
+  cursor: default;
 }
 
 .trend-month-picker select {
@@ -1703,9 +1738,14 @@ body.modal-open {
     flex-direction: column;
   }
 
+  .trend-month-nav,
   .trend-month-picker,
   .trend-month-picker select {
     width: 100%;
+  }
+
+  .trend-month-picker {
+    flex: 1;
   }
 
   .trend-list {

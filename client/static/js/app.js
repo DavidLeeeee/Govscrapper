@@ -35,6 +35,8 @@ const followKeywords = document.querySelector("#follow-keywords");
 const followMatchCount = document.querySelector("#follow-match-count");
 const homeMatchList = document.querySelector("#home-match-list");
 const trendMonthSelect = document.querySelector("#trend-month-select");
+const trendMonthNewer = document.querySelector("#trend-month-newer");
+const trendMonthOlder = document.querySelector("#trend-month-older");
 const trendList = document.querySelector("#trend-list");
 const noticeModal = document.querySelector("#notice-modal");
 const noticeModalPanel = document.querySelector(".notice-modal-panel");
@@ -270,6 +272,14 @@ if (trendMonthSelect) {
     state.loadedTrends = false;
     loadTrends();
   });
+}
+
+if (trendMonthNewer) {
+  trendMonthNewer.addEventListener("click", () => shiftTrendMonthGroup(-3));
+}
+
+if (trendMonthOlder) {
+  trendMonthOlder.addEventListener("click", () => shiftTrendMonthGroup(3));
 }
 
 if (trendList) {
@@ -687,6 +697,7 @@ function renderTrendMonthOptions() {
   if (availableMonths.length === 0) {
     trendMonthSelect.innerHTML = '<option value="">생성된 월 없음</option>';
     trendMonthSelect.disabled = true;
+    updateTrendMonthArrowState([]);
     return;
   }
 
@@ -698,6 +709,34 @@ function renderTrendMonthOptions() {
   trendMonthSelect.innerHTML = availableMonths
     .map((month) => `<option value="${escapeAttribute(month)}"${month === state.selectedTrendMonth ? " selected" : ""}>${escapeHtml(formatTrendMonth(month))}</option>`)
     .join("");
+  updateTrendMonthArrowState(availableMonths);
+}
+
+function shiftTrendMonthGroup(offset) {
+  const availableMonths = state.trends?.available_months ?? [];
+  if (availableMonths.length === 0) {
+    return;
+  }
+
+  const selectedIndex = Math.max(0, availableMonths.indexOf(state.selectedTrendMonth));
+  const nextIndex = selectedIndex + offset;
+  if (nextIndex < 0 || nextIndex >= availableMonths.length) {
+    return;
+  }
+
+  state.selectedTrendMonth = availableMonths[nextIndex];
+  state.loadedTrends = false;
+  loadTrends();
+}
+
+function updateTrendMonthArrowState(availableMonths) {
+  const selectedIndex = availableMonths.indexOf(state.selectedTrendMonth);
+  if (trendMonthNewer) {
+    trendMonthNewer.disabled = selectedIndex < 3;
+  }
+  if (trendMonthOlder) {
+    trendMonthOlder.disabled = selectedIndex === -1 || selectedIndex + 3 >= availableMonths.length;
+  }
 }
 
 function renderMonthlyTrend(month, monthlyReport) {
