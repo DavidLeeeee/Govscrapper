@@ -24,9 +24,13 @@
 
 - 서버 실행: `uv run python app.py`
 - 핫리로드 서버 실행: `uv run uvicorn src.server:start_app --factory --reload --host 0.0.0.0 --port 8000`
+- 서버 백그라운드 실행: `mkdir -p logs && nohup uv run python app.py > logs/server.log 2>&1 &`
+- 서버 백그라운드 로그 확인: `tail -f logs/server.log`
+- 서버 백그라운드 프로세스 확인: `ps aux | grep "python app.py"`
+- 서버 백그라운드 중지: `pkill -f "python app.py"`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
-- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-05-20 --end-date 2026-06-12`
+- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-12 --end-date 2026-06-12`
 <!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->
 <!-- - IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5` -->
 
@@ -43,3 +47,14 @@
 - 지역공고 상세 포함 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5 --with-detail`
 - cron용 어제~오늘 공고 수집 실행: `YESTERDAY=$(date -d "yesterday" +%F); TODAY=$(date +%F); uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY"`
 - cron용 어제~오늘 지역공고 수집 실행: `YESTERDAY=$(date -d "yesterday" +%F); TODAY=$(date +%F); uv run python scripts/run_regional_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" --max-pages 5`
+- cron 수정: `crontab -e`
+- cron 등록 확인: `crontab -l`
+- cron 로그 확인: `tail -f logs/cron-scraping.log`
+
+## 서버 cron 등록 예시
+
+```cron
+0 1 * * * cd /home/shield/govscraper/Govscrapper && /home/shield/.local/bin/uv run python scripts/align_expired.py >> logs/cron-align-expired.log 2>&1
+0 10 * * * cd /home/shield/govscraper/Govscrapper && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && /home/shield/.local/bin/uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" >> logs/cron-scraping.log 2>&1
+5 10 * * * cd /home/shield/govscraper/Govscrapper && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && /home/shield/.local/bin/uv run python scripts/run_regional_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" --max-pages 5 >> logs/cron-regional.log 2>&1
+```
