@@ -34,17 +34,13 @@
   0 1 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && uv run python scripts/align_expired.py >> logs/cron-align-expired.log 2>&1
   ```
 
-- 일반 공고: 어제~오늘 등록 공고 수집
+- 일반/지역 공고 수집 + Google Chat 통합 알림: 어제~오늘 등록 공고 수집 후 알림 1회 전송
   ```cron
-  0 10 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" >> logs/cron-scraping.log 2>&1
-  ```
-
-- 지역공고: 어제~오늘 등록 공고 수집
-  ```cron
-  5 10 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && uv run python scripts/run_regional_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" --max-pages 5 >> logs/cron-regional.log 2>&1
+  0 10 * * * cd /path/to/03_GOV_BUIS_SCRAPPER && uv run python scripts/run_daily_scraping_notify.py >> logs/cron-daily-notify.log 2>&1
   ```
 
 `/path/to/03_GOV_BUIS_SCRAPPER`는 실제 프로젝트 경로로 바꾼다.
+Google Chat 알림을 보내려면 `.env`에 `CHAT_API_URL`을 설정한다.
 
 ## 5. 등록 확인
 
@@ -60,14 +56,14 @@
   tail -f logs/cron-align-expired.log
   ```
 
-- 일반 공고 로그:
+- 수집/알림 로그:
   ```bash
-  tail -f logs/cron-scraping.log
+  tail -f logs/cron-daily-notify.log
   ```
 
-- 지역공고 로그:
+- 최근 알림 원본 JSON:
   ```bash
-  tail -f logs/cron-regional.log
+  cat data/alarm/latest.json
   ```
 
 ## 주의

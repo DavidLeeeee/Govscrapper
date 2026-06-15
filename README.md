@@ -30,7 +30,7 @@
 - 서버 백그라운드 중지: `pkill -f "python app.py"`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
-- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-12 --end-date 2026-06-15`
+- 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-06-10 --end-date 2026-06-12`
 <!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->
 <!-- - IRIS만 백필 실행: `uv run python scripts/backfill_iris.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5` -->
 
@@ -47,6 +47,10 @@
 - 지역공고 상세 포함 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5 --with-detail`
 - cron용 어제~오늘 공고 수집 실행: `YESTERDAY=$(date -d "yesterday" +%F); TODAY=$(date +%F); uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY"`
 - cron용 어제~오늘 지역공고 수집 실행: `YESTERDAY=$(date -d "yesterday" +%F); TODAY=$(date +%F); uv run python scripts/run_regional_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" --max-pages 5`
+- cron용 어제~오늘 수집 + Google Chat 통합 알림 실행: `uv run python scripts/run_daily_scraping_notify.py`
+- 최근 알림 JSON 확인: `cat data/alarm/latest.json`
+- Google Chat 알림 URL 설정: `.env`에 `CHAT_API_URL=https://chat.googleapis.com/...`
+- 알림 하단 바로가기 설정: `.env`에 `SITE_URL=http://서버주소:8000`
 - cron 수정: `crontab -e`
 - cron 등록 확인: `crontab -l`
 - cron 로그 확인: `tail -f logs/cron-scraping.log`
@@ -55,6 +59,5 @@
 
 ```cron
 0 1 * * * cd /home/shield/govscraper/Govscrapper && /home/shield/.local/bin/uv run python scripts/align_expired.py >> logs/cron-align-expired.log 2>&1
-0 10 * * * cd /home/shield/govscraper/Govscrapper && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && /home/shield/.local/bin/uv run python scripts/run_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" >> logs/cron-scraping.log 2>&1
-5 10 * * * cd /home/shield/govscraper/Govscrapper && YESTERDAY=$(date -d "yesterday" +\%F) && TODAY=$(date +\%F) && /home/shield/.local/bin/uv run python scripts/run_regional_scraping.py --start-date "$YESTERDAY" --end-date "$TODAY" --max-pages 5 >> logs/cron-regional.log 2>&1
+0 10 * * * cd /home/shield/govscraper/Govscrapper && /home/shield/.local/bin/uv run python scripts/run_daily_scraping_notify.py >> logs/cron-daily-notify.log 2>&1
 ```

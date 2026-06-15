@@ -39,7 +39,7 @@ def main() -> None:
             data_dir=settings.data_dir,
             scrapers=SCRAPERS,
             options=options,
-            google_chat_webhook_url=settings.google_chat_webhook_url,
+            google_chat_webhook_url=None,
             summarizer=summarizer,
             on_summary_progress=lambda message: print(message, flush=True),
         )
