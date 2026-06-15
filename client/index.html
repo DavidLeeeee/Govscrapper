@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>정부지원사업 스크래퍼</title>
-    <link rel="stylesheet" href="/static/css/app.css?v=budget-summary-2" />
+    <link rel="stylesheet" href="/static/css/app.css?v=regional-search-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -182,9 +182,17 @@
                   ×
                 </button>
               </div>
+              <div class="search-shortcuts" aria-label="지역공고 검색 shortcut">
+                <form class="shortcut-form" id="regional-shortcut-form">
+                  <input id="regional-shortcut-input" type="text" placeholder="shortcut 추가" autocomplete="off" />
+                  <button type="submit">추가</button>
+                </form>
+                <div class="shortcut-keywords" id="regional-shortcut-keywords"></div>
+              </div>
             </div>
           </div>
 
+          <nav class="date-jump" id="regional-date-jump" aria-label="지역공고 등록일 바로가기"></nav>
           <div class="notice-grid" id="regional-grid"></div>
         </section>
 
@@ -276,6 +284,6 @@
         <div class="notice-modal-content" id="notice-modal-content"></div>
       </section>
     </div>
-    <script src="/static/js/app.js?v=budget-summary-2"></script>
+    <script src="/static/js/app.js?v=regional-search-1"></script>
   </body>
 </html>

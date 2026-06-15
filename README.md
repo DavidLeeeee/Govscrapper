@@ -26,7 +26,7 @@
 - 핫리로드 서버 실행: `uv run uvicorn src.server:start_app --factory --reload --host 0.0.0.0 --port 8000`
 - 서버 백그라운드 실행: `mkdir -p logs && nohup uv run python app.py > logs/server.log 2>&1 &`
 - 서버 백그라운드 로그 확인: `tail -f logs/server.log`
-- 서버 백그라운드 프로세스 확인: `ps aux | grep "python app.py"`
+- 서버 백그라운드 프로세스 확인: `ps aux | grep "python app.py"` or `ss -ltnp | grep 5090`
 - 서버 백그라운드 중지: `pkill -f "python app.py"`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`

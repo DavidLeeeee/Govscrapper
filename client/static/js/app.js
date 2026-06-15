@@ -4,6 +4,7 @@ const filterBar = document.querySelector(".filter-bar");
 const noticeGrid = document.querySelector("#notice-grid");
 const noticeCount = document.querySelector("#notice-count");
 const dateJump = document.querySelector("#date-jump");
+const regionalDateJump = document.querySelector("#regional-date-jump");
 const expiredFilterBar = document.querySelector("#expired-filter-bar");
 const expiredGrid = document.querySelector("#expired-grid");
 const expiredCount = document.querySelector("#expired-count");
@@ -21,6 +22,9 @@ const regionalSearchClear = document.querySelector("#regional-search-clear");
 const shortcutForm = document.querySelector("#shortcut-form");
 const shortcutInput = document.querySelector("#shortcut-input");
 const shortcutKeywords = document.querySelector("#shortcut-keywords");
+const regionalShortcutForm = document.querySelector("#regional-shortcut-form");
+const regionalShortcutInput = document.querySelector("#regional-shortcut-input");
+const regionalShortcutKeywords = document.querySelector("#regional-shortcut-keywords");
 const homeAlert = document.querySelector("#home-alert");
 const todayNewCount = document.querySelector("#today-new-count");
 const activeNoticeCount = document.querySelector("#active-notice-count");
@@ -156,15 +160,14 @@ if (expiredSearchClear && expiredSearch) {
 if (shortcutForm && shortcutInput) {
   shortcutForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const keyword = normalizeKeyword(shortcutInput.value);
-    if (!keyword) {
-      return;
-    }
+    addSearchShortcut(shortcutInput);
+  });
+}
 
-    state.searchShortcuts = [...new Set([...state.searchShortcuts, keyword])];
-    shortcutInput.value = "";
-    writeSearchShortcuts();
-    renderSearchShortcuts();
+if (regionalShortcutForm && regionalShortcutInput) {
+  regionalShortcutForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addSearchShortcut(regionalShortcutInput);
   });
 }
 
@@ -188,23 +191,13 @@ if (regionalSearchClear && regionalSearch) {
 
 if (shortcutKeywords) {
   shortcutKeywords.addEventListener("click", (event) => {
-    const removeButton = event.target.closest(".shortcut-remove");
-    if (removeButton) {
-      state.searchShortcuts = state.searchShortcuts.filter((keyword) => keyword !== removeButton.dataset.keyword);
-      writeSearchShortcuts();
-      renderSearchShortcuts();
-      return;
-    }
+    handleShortcutKeywordClick(event, "notices");
+  });
+}
 
-    const button = event.target.closest(".shortcut-chip");
-    if (!button || !noticeSearch) {
-      return;
-    }
-
-    state.searchQuery = appendSearchToken(state.searchQuery, button.dataset.keyword ?? "");
-    noticeSearch.value = state.searchQuery;
-    updateSearchClear();
-    renderNotices();
+if (regionalShortcutKeywords) {
+  regionalShortcutKeywords.addEventListener("click", (event) => {
+    handleShortcutKeywordClick(event, "regional");
   });
 }
 
@@ -237,17 +230,11 @@ if (followKeywords) {
 }
 
 if (dateJump) {
-  dateJump.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-date-target]");
-    if (!button) {
-      return;
-    }
+  dateJump.addEventListener("click", handleDateJumpClick);
+}
 
-    document.querySelector(`#${button.dataset.dateTarget}`)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  });
+if (regionalDateJump) {
+  regionalDateJump.addEventListener("click", handleDateJumpClick);
 }
 
 if (trendTabs) {
@@ -493,13 +480,13 @@ function renderNotices() {
 
   if (filteredNotices.length === 0) {
     noticeGrid.innerHTML = '<p class="empty-state">표시할 공고가 없습니다.</p>';
-    renderDateJump([]);
+    renderDateJump([], dateJump);
     return;
   }
 
   const groupedNotices = groupNoticesByDate(sortNoticesByPostedDate(filteredNotices));
   noticeGrid.innerHTML = renderNoticeDateSections(groupedNotices);
-  renderDateJump(groupedNotices);
+  renderDateJump(groupedNotices, dateJump);
 }
 
 function renderRegionalNotices() {
@@ -510,6 +497,7 @@ function renderRegionalNotices() {
   if (!state.loadedRegionalNotices) {
     regionalGrid.innerHTML = '<p class="empty-state">지역공고를 불러오는 중입니다.</p>';
     regionalCount.textContent = "0건";
+    renderDateJump([], regionalDateJump);
     return;
   }
 
@@ -529,11 +517,13 @@ function renderRegionalNotices() {
 
   if (filteredNotices.length === 0) {
     regionalGrid.innerHTML = '<p class="empty-state">표시할 지역공고가 없습니다.</p>';
+    renderDateJump([], regionalDateJump);
     return;
   }
 
   const groupedNotices = groupNoticesByDate(sortNoticesByPostedDate(filteredNotices));
-  regionalGrid.innerHTML = renderNoticeDateSections(groupedNotices);
+  regionalGrid.innerHTML = renderNoticeDateSections(groupedNotices, "regional-date");
+  renderDateJump(groupedNotices, regionalDateJump, "regional-date");
 }
 
 function renderBookmarks() {
@@ -757,16 +747,21 @@ function renderHomeMatchItem(notice) {
 }
 
 function renderSearchShortcuts() {
-  if (!shortcutKeywords) {
+  renderShortcutContainer(shortcutKeywords);
+  renderShortcutContainer(regionalShortcutKeywords);
+}
+
+function renderShortcutContainer(container) {
+  if (!container) {
     return;
   }
 
   if (state.searchShortcuts.length === 0) {
-    shortcutKeywords.innerHTML = '<span class="shortcut-placeholder">자주 쓰는 검색어를 추가해두세요.</span>';
+    container.innerHTML = '<span class="shortcut-placeholder">자주 쓰는 검색어를 추가해두세요.</span>';
     return;
   }
 
-  shortcutKeywords.innerHTML = state.searchShortcuts.map((keyword) => `
+  container.innerHTML = state.searchShortcuts.map((keyword) => `
       <span class="shortcut-item">
         <button class="shortcut-chip" type="button" data-keyword="${escapeAttribute(keyword)}">
           ${escapeHtml(keyword)}
@@ -781,6 +776,48 @@ function renderSearchShortcuts() {
         </button>
       </span>
     `).join("");
+}
+
+function addSearchShortcut(input) {
+  const keyword = normalizeKeyword(input.value);
+  if (!keyword) {
+    return;
+  }
+
+  state.searchShortcuts = [...new Set([...state.searchShortcuts, keyword])];
+  input.value = "";
+  writeSearchShortcuts();
+  renderSearchShortcuts();
+}
+
+function handleShortcutKeywordClick(event, targetView) {
+  const removeButton = event.target.closest(".shortcut-remove");
+  if (removeButton) {
+    state.searchShortcuts = state.searchShortcuts.filter((keyword) => keyword !== removeButton.dataset.keyword);
+    writeSearchShortcuts();
+    renderSearchShortcuts();
+    return;
+  }
+
+  const button = event.target.closest(".shortcut-chip");
+  if (!button) {
+    return;
+  }
+
+  if (targetView === "regional" && regionalSearch) {
+    state.regionalSearchQuery = appendSearchToken(state.regionalSearchQuery, button.dataset.keyword ?? "");
+    regionalSearch.value = state.regionalSearchQuery;
+    updateRegionalSearchClear();
+    renderRegionalNotices();
+    return;
+  }
+
+  if (noticeSearch) {
+    state.searchQuery = appendSearchToken(state.searchQuery, button.dataset.keyword ?? "");
+    noticeSearch.value = state.searchQuery;
+    updateSearchClear();
+    renderNotices();
+  }
 }
 
 function appendSearchToken(currentValue, keyword) {
@@ -841,11 +878,11 @@ function updateRegionalSearchClear() {
   regionalSearchClear.hidden = state.regionalSearchQuery.trim() === "";
 }
 
-function renderNoticeDateSections(groupedNotices) {
+function renderNoticeDateSections(groupedNotices, idPrefix = "notice-date") {
   return groupedNotices
     .map(
       ([date, dateNotices]) => `
-        <section class="notice-date-section" id="${escapeAttribute(getDateSectionId(date))}" aria-label="${escapeAttribute(date)} 공고">
+        <section class="notice-date-section" id="${escapeAttribute(getDateSectionId(date, idPrefix))}" aria-label="${escapeAttribute(date)} 공고">
           <div class="notice-date-header">
             <h2>${escapeHtml(date)}</h2>
             <span>${dateNotices.length}건</span>
@@ -859,20 +896,20 @@ function renderNoticeDateSections(groupedNotices) {
     .join("");
 }
 
-function renderDateJump(groupedNotices) {
-  if (!dateJump) {
+function renderDateJump(groupedNotices, targetDateJump, idPrefix = "notice-date") {
+  if (!targetDateJump) {
     return;
   }
 
   if (groupedNotices.length === 0) {
-    dateJump.innerHTML = "";
+    targetDateJump.innerHTML = "";
     return;
   }
 
-  dateJump.innerHTML = groupedNotices
+  targetDateJump.innerHTML = groupedNotices
     .map(
       ([date, dateNotices]) => `
-        <button type="button" data-date-target="${escapeAttribute(getDateSectionId(date))}" title="${escapeAttribute(`${date} ${dateNotices.length}건`)}">
+        <button type="button" data-date-target="${escapeAttribute(getDateSectionId(date, idPrefix))}" title="${escapeAttribute(`${date} ${dateNotices.length}건`)}">
           ${escapeHtml(formatDateJumpLabel(date))}
         </button>
       `,
@@ -880,8 +917,20 @@ function renderDateJump(groupedNotices) {
     .join("");
 }
 
-function getDateSectionId(date) {
-  return `notice-date-${String(date).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+function handleDateJumpClick(event) {
+  const button = event.target.closest("[data-date-target]");
+  if (!button) {
+    return;
+  }
+
+  document.querySelector(`#${button.dataset.dateTarget}`)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
+function getDateSectionId(date, prefix = "notice-date") {
+  return `${prefix}-${String(date).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 }
 
 function formatDateJumpLabel(date) {
@@ -1389,7 +1438,7 @@ function getDisplayDeadlineText(notice) {
   }
 
   if (notice.ai_deadline && notice.ai_deadline_confidence === "high") {
-    return `${notice.ai_deadline} (AI 추정)`;
+    return `${notice.ai_deadline} (추정)`;
   }
 
   return "확인 필요";
