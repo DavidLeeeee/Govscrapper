@@ -31,6 +31,7 @@ class Notice(TypedDict):
     apply_method: NotRequired[str | None]
     contact: NotRequired[str | None]
     attachments: NotRequired[list[dict[str, Any]]]
+    analysis: NotRequired[bool]
     marked: NotRequired[bool]
     mark: NotRequired[dict[str, Any]]
 

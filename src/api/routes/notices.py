@@ -4,6 +4,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 
 from src.scrapers.SITES_INFO import ScrapeTarget
+from src.services.deep_analysis.openai_deep_analyzer import OpenAIDeepAnalyzer
+from src.services.deep_analysis.service import analyze_notice, get_analysis
 from src.services.notification_service import build_shared_notice_message, send_google_chat_message
 from src.services.marked_service import apply_marked_state, list_marked_notices, mark_notice, unmark_notice
 from src.services.storage_service import manually_expire_notice, merge_notices, notice_key_string, read_json_list, sort_notices
@@ -172,3 +174,28 @@ async def share_notice(request: Request, payload: dict[str, Any]) -> dict[str, A
     send_google_chat_message(webhook_url, message)
 
     return {"shared": True}
+
+
+@router.get("/notices/analysis")
+async def read_notice_analysis(request: Request, key: str) -> dict[str, Any]:
+    data_dir: Path = request.app.state.settings.data_dir
+    analysis = get_analysis(data_dir, key)
+    if analysis is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return analysis
+
+
+@router.post("/notices/analysis")
+async def create_notice_analysis(request: Request, notice: dict[str, Any]) -> dict[str, Any]:
+    settings = request.app.state.settings
+    if not settings.openai_api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+
+    if not notice.get("source") or not notice.get("title"):
+        raise HTTPException(status_code=400, detail="notice source and title are required")
+
+    analyzer = OpenAIDeepAnalyzer(
+        api_key=settings.openai_api_key,
+        model=settings.openai_analysis_model,
+    )
+    return analyze_notice(settings.data_dir, notice, analyzer)

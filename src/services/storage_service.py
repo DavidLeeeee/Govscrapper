@@ -22,6 +22,7 @@ def normalize_notice(notice: Notice) -> Notice:
         "deadline": notice.get("deadline"),
         "scraped_at": str(notice.get("scraped_at", datetime.now().astimezone().isoformat(timespec="seconds"))),
         "keywords": list(notice.get("keywords", [])),
+        "analysis": bool(notice.get("analysis", False)),
     }
 
     if "summary" in notice:
@@ -97,7 +98,11 @@ def read_json_list(path: Path) -> list[Notice]:
     if not isinstance(data, list):
         raise ValueError(f"JSON list 형식이 아닙니다: {path}")
 
-    return normalize_notices(data)
+    normalized = normalize_notices(data)
+    if any(isinstance(item, dict) and "analysis" not in item for item in data):
+        atomic_write_json(path, normalized)
+
+    return normalized
 
 
 def read_raw_json_list(path: Path) -> list[dict[str, Any]]:
@@ -184,9 +189,13 @@ def _merge_notice_detail_fields(existing: Notice | None, incoming: Notice) -> No
         "apply_method",
         "contact",
         "attachments",
+        "analysis",
     ):
         if field not in merged and field in existing:
             merged[field] = existing[field]  # type: ignore[literal-required]
+
+    if existing.get("analysis") and not merged.get("analysis"):
+        merged["analysis"] = True
 
     return merged  # type: ignore[return-value]
 

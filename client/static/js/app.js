@@ -1171,6 +1171,16 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  const analysisButton = event.target.closest("[data-analysis-key]");
+  if (analysisButton) {
+    const notice = findNoticeByKey(analysisButton.dataset.analysisKey);
+    if (notice && !analysisButton.disabled) {
+      analysisButton.disabled = true;
+      await analyzeNoticeDeeply(notice);
+    }
+    return;
+  }
+
   const expireButton = event.target.closest("[data-force-expire-key]");
   if (expireButton) {
     const confirmPanel = noticeModalContent?.querySelector(".notice-expire-confirm");
@@ -1232,6 +1242,9 @@ function openNoticeModal(notice) {
   state.activeModalKey = getNoticeKey(notice);
   document.body.classList.add("modal-open");
   noticeModalPanel.focus();
+  if (notice.analysis) {
+    loadNoticeAnalysis(notice);
+  }
 }
 
 function closeNoticeModal() {
@@ -1252,6 +1265,7 @@ function renderNoticeDetail(notice) {
   const detailPoints = Array.isArray(notice.detail_points) ? notice.detail_points.filter(Boolean) : [];
   const summary = String(notice.summary ?? "").trim();
   const budgetText = getBudgetText(notice);
+  const noticeKey = getNoticeKey(notice);
 
   return `
     <div class="notice-detail-header">
@@ -1259,86 +1273,93 @@ function renderNoticeDetail(notice) {
       ${deadlineLabel ? `<span class="deadline">${escapeHtml(deadlineLabel)}</span>` : ""}
     </div>
     <h2 id="notice-modal-title">${escapeHtml(notice.title)}</h2>
-    <div class="notice-detail-budget">
-      <span>예산액</span>
-      <strong>${escapeHtml(budgetText)}</strong>
-    </div>
-    <dl class="notice-detail-meta">
-      <div>
-        <dt>등록일</dt>
-        <dd>${escapeHtml(notice.posted_at)}</dd>
+    <div class="notice-detail-layout">
+      <aside class="notice-analysis-panel" data-analysis-panel-key="${escapeAttribute(noticeKey)}">
+        ${renderNoticeAnalysisPanel(notice)}
+      </aside>
+      <div class="notice-detail-main">
+        <div class="notice-detail-budget">
+          <span>예산액</span>
+          <strong>${escapeHtml(budgetText)}</strong>
+        </div>
+        <dl class="notice-detail-meta">
+          <div>
+            <dt>등록일</dt>
+            <dd>${escapeHtml(notice.posted_at)}</dd>
+          </div>
+          <div>
+            <dt>마감일</dt>
+            <dd>${escapeHtml(deadlineText)}</dd>
+          </div>
+          ${
+            notice.region
+              ? `<div>
+                  <dt>지역</dt>
+                  <dd>${escapeHtml(notice.region)}</dd>
+                </div>`
+              : ""
+          }
+          ${
+            notice.agency
+              ? `<div>
+                  <dt>수행기관</dt>
+                  <dd>${escapeHtml(notice.agency)}</dd>
+                </div>`
+              : ""
+          }
+        </dl>
+        <section class="notice-detail-section">
+          <h3>요약</h3>
+          <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
+        </section>
+        ${
+          detailPoints.length > 0
+            ? `<section class="notice-detail-section">
+                <h3>핵심 내용</h3>
+                <ul class="notice-detail-points">
+                  ${detailPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
+                </ul>
+              </section>`
+            : ""
+        }
+        ${
+          keywords.length > 0
+            ? `<div class="notice-detail-keywords">
+                ${keywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
+              </div>`
+            : ""
+        }
+        <div class="notice-detail-actions">
+          <button class="notice-share-button" type="button" data-share-key="${escapeAttribute(noticeKey)}">
+            공유
+          </button>
+          ${
+            notice.expired || isRegionalNotice(notice)
+              ? ""
+              : `<button class="notice-expire-button" type="button" data-force-expire-key="${escapeAttribute(noticeKey)}">
+                  마감시키기
+                </button>`
+          }
+          <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
+        </div>
+        ${
+          notice.expired || isRegionalNotice(notice)
+            ? ""
+            : `<div class="notice-expire-confirm" hidden>
+                <strong>이 공고를 정말 마감 처리할까요?</strong>
+                <p>공고조회 목록에서 제거되고 마감공고로 이동합니다.</p>
+                <div>
+                  <button class="notice-expire-confirm-button" type="button" data-confirm-expire="${escapeAttribute(noticeKey)}">
+                    마감 처리
+                  </button>
+                  <button class="notice-expire-cancel-button" type="button" data-cancel-expire>
+                    취소
+                  </button>
+                </div>
+              </div>`
+        }
       </div>
-      <div>
-        <dt>마감일</dt>
-        <dd>${escapeHtml(deadlineText)}</dd>
-      </div>
-      ${
-        notice.region
-          ? `<div>
-              <dt>지역</dt>
-              <dd>${escapeHtml(notice.region)}</dd>
-            </div>`
-          : ""
-      }
-      ${
-        notice.agency
-          ? `<div>
-              <dt>수행기관</dt>
-              <dd>${escapeHtml(notice.agency)}</dd>
-            </div>`
-          : ""
-      }
-    </dl>
-    <section class="notice-detail-section">
-      <h3>요약</h3>
-      <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
-    </section>
-    ${
-      detailPoints.length > 0
-        ? `<section class="notice-detail-section">
-            <h3>핵심 내용</h3>
-            <ul class="notice-detail-points">
-              ${detailPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
-            </ul>
-          </section>`
-        : ""
-    }
-    ${
-      keywords.length > 0
-        ? `<div class="notice-detail-keywords">
-            ${keywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
-          </div>`
-        : ""
-    }
-    <div class="notice-detail-actions">
-      <button class="notice-share-button" type="button" data-share-key="${escapeAttribute(getNoticeKey(notice))}">
-        공유
-      </button>
-      ${
-        notice.expired || isRegionalNotice(notice)
-          ? ""
-          : `<button class="notice-expire-button" type="button" data-force-expire-key="${escapeAttribute(getNoticeKey(notice))}">
-              마감시키기
-            </button>`
-      }
-      <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
     </div>
-    ${
-      notice.expired || isRegionalNotice(notice)
-        ? ""
-        : `<div class="notice-expire-confirm" hidden>
-            <strong>이 공고를 정말 마감 처리할까요?</strong>
-            <p>공고조회 목록에서 제거되고 마감공고로 이동합니다.</p>
-            <div>
-              <button class="notice-expire-confirm-button" type="button" data-confirm-expire="${escapeAttribute(getNoticeKey(notice))}">
-                마감 처리
-              </button>
-              <button class="notice-expire-cancel-button" type="button" data-cancel-expire>
-                취소
-              </button>
-            </div>
-          </div>`
-    }
   `;
 }
 
@@ -1346,6 +1367,155 @@ function buildFallbackSummary(notice) {
   const source = notice.source_display_name ?? notice.source;
   const deadlineText = getDisplayDeadlineText(notice);
   return `${source}에서 수집한 공고입니다. 상세 요약은 아직 수집되지 않았으며, 등록일은 ${notice.posted_at}, 마감일은 ${deadlineText}입니다. 원문 공고에서 지원 대상과 신청 방법을 확인하세요.`;
+}
+
+function renderNoticeAnalysisPanel(notice) {
+  const noticeKey = getNoticeKey(notice);
+  const button = notice.analysis
+    ? '<button class="notice-analysis-button" type="button" disabled>분석 완료</button>'
+    : `<button class="notice-analysis-button" type="button" data-analysis-key="${escapeAttribute(noticeKey)}">AI 심층 분석</button>`;
+  const body = notice.analysis
+    ? '<div class="notice-analysis-result" data-analysis-result>분석 결과를 불러오는 중입니다.</div>'
+    : '<div class="notice-analysis-empty">첨부파일과 상세 페이지를 분석해 개발 관점의 요구사항을 정리합니다.</div>';
+
+  return `
+    <div class="notice-analysis-heading">
+      <span>Deep Analysis</span>
+      <strong>심층 분석</strong>
+    </div>
+    ${button}
+    ${body}
+  `;
+}
+
+async function loadNoticeAnalysis(notice) {
+  const result = noticeModalContent?.querySelector("[data-analysis-result]");
+  if (!result) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/notices/analysis?key=${encodeURIComponent(getNoticeKey(notice))}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const analysis = await response.json();
+    result.innerHTML = renderAnalysisResult(analysis);
+  } catch {
+    result.innerHTML = '<p class="notice-analysis-error">저장된 분석 결과를 불러오지 못했습니다.</p>';
+  }
+}
+
+async function analyzeNoticeDeeply(notice) {
+  const panel = noticeModalContent?.querySelector(`[data-analysis-panel-key="${cssEscape(getNoticeKey(notice))}"]`);
+  if (panel) {
+    panel.innerHTML = `
+      <div class="notice-analysis-heading">
+        <span>Deep Analysis</span>
+        <strong>심층 분석</strong>
+      </div>
+      <button class="notice-analysis-button" type="button" disabled>분석 중</button>
+      <div class="notice-analysis-empty">첨부파일을 수집하고 AI 분석을 진행 중입니다. 파일 수와 크기에 따라 시간이 걸릴 수 있습니다.</div>
+    `;
+  }
+
+  try {
+    const response = await fetch("/api/notices/analysis", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(notice),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const analysis = await response.json();
+    notice.analysis = true;
+    syncAnalysisState(notice);
+    if (panel) {
+      panel.innerHTML = `
+        <div class="notice-analysis-heading">
+          <span>Deep Analysis</span>
+          <strong>심층 분석</strong>
+        </div>
+        <button class="notice-analysis-button" type="button" disabled>분석 완료</button>
+        <div class="notice-analysis-result" data-analysis-result>${renderAnalysisResult(analysis)}</div>
+      `;
+    }
+  } catch {
+    if (panel) {
+      panel.innerHTML = `
+        <div class="notice-analysis-heading">
+          <span>Deep Analysis</span>
+          <strong>심층 분석</strong>
+        </div>
+        <button class="notice-analysis-button" type="button" data-analysis-key="${escapeAttribute(getNoticeKey(notice))}">다시 분석</button>
+        <p class="notice-analysis-error">분석에 실패했습니다. 첨부파일 접근 또는 API 설정을 확인하세요.</p>
+      `;
+    }
+  }
+}
+
+function renderAnalysisResult(analysis) {
+  const mainDevelopment = arrayOrEmpty(analysis.main_development);
+  const majorRequirements = arrayOrEmpty(analysis.major_requirements).concat(arrayOrEmpty(analysis.requirements));
+  const implementationPoints = arrayOrEmpty(analysis.implementation_points);
+  const keywords = arrayOrEmpty(analysis.technical_keywords);
+
+  return `
+    ${renderAnalysisParagraph("사업 추진 목표", analysis.business_goal || analysis.overview)}
+    ${renderAnalysisParagraph("사업 추진 배경", analysis.business_background || analysis.planning_summary)}
+    ${renderAnalysisParagraph("사업 필요성", analysis.business_necessity)}
+    ${renderAnalysisList("주요 개발 내용", mainDevelopment)}
+    ${renderAnalysisList("주요 요구사항", majorRequirements)}
+    ${renderAnalysisList("구현 포인트", implementationPoints)}
+    ${
+      analysis.recommended_action
+        ? `<section><h4>추천 액션</h4><p>${escapeHtml(analysis.recommended_action)}</p></section>`
+        : ""
+    }
+    ${
+      keywords.length > 0
+        ? `<div class="notice-analysis-keywords">${keywords.map((keyword) => `<span>${escapeHtml(keyword)}</span>`).join("")}</div>`
+        : ""
+    }
+  `;
+}
+
+function renderAnalysisParagraph(title, value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "";
+  }
+  return `<section><h4>${escapeHtml(title)}</h4><p>${escapeHtml(text)}</p></section>`;
+}
+
+function renderAnalysisList(title, items) {
+  if (items.length === 0) {
+    return "";
+  }
+  return `
+    <section>
+      <h4>${escapeHtml(title)}</h4>
+      <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>
+  `;
+}
+
+function arrayOrEmpty(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function syncAnalysisState(notice) {
+  const key = getNoticeKey(notice);
+  for (const group of [state.notices, state.expiredNotices, state.regionalNotices, state.bookmarks]) {
+    for (const item of group) {
+      if (getNoticeKey(item) === key) {
+        item.analysis = true;
+      }
+    }
+  }
 }
 
 function isRegionalNotice(notice) {
@@ -1626,6 +1796,13 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value).replaceAll("`", "&#096;");
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) {
+    return window.CSS.escape(String(value ?? ""));
+  }
+  return String(value ?? "").replace(/["\\]/g, "\\$&");
 }
 
 function normalizeSearchText(value) {
