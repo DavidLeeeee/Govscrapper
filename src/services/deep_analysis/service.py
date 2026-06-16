@@ -47,7 +47,6 @@ def analyze_notice(
             )
 
     analysis_input = {
-        "detail_text": materials.get("detail_text") or "",
         "attachments": materials.get("attachments") or [],
         "files": files,
     }

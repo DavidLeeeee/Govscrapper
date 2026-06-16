@@ -1376,7 +1376,7 @@ function renderNoticeAnalysisPanel(notice) {
     : `<button class="notice-analysis-button" type="button" data-analysis-key="${escapeAttribute(noticeKey)}">AI 심층 분석</button>`;
   const body = notice.analysis
     ? '<div class="notice-analysis-result" data-analysis-result>분석 결과를 불러오는 중입니다.</div>'
-    : '<div class="notice-analysis-empty">첨부파일과 상세 페이지를 분석해 개발 관점의 요구사항을 정리합니다.</div>';
+    : '<div class="notice-analysis-empty">첨부파일을 분석해 개발 관점의 요구사항을 정리합니다.</div>';
 
   return `
     <div class="notice-analysis-heading">

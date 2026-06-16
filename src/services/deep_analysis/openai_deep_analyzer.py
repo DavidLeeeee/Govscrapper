@@ -91,9 +91,6 @@ def _build_prompt(notice: Notice, material: dict[str, Any]) -> str:
         f"마감일: {notice.get('deadline') or notice.get('ai_deadline') or '확인 필요'}",
         f"원문 URL: {notice.get('url')}",
         "",
-        "[상세 페이지 텍스트]",
-        str(material.get("detail_text") or "")[:12000],
-        "",
         "[첨부파일 텍스트]",
     ]
 
