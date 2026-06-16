@@ -220,7 +220,7 @@ def find_new_notices(existing: Iterable[Notice], incoming: Iterable[Notice]) -> 
 def split_by_deadline(
     notices: Iterable[Notice],
     today: date | None = None,
-    no_deadline_expire_days: int = 60,
+    no_deadline_expire_days: int = 30,
 ) -> tuple[list[Notice], list[Notice]]:
     current_date = today or datetime.now().date()
     active: list[Notice] = []
@@ -236,7 +236,7 @@ def split_by_deadline(
     return active, expired
 
 
-def notice_expires_at(notice: Notice, no_deadline_expire_days: int = 60) -> date | None:
+def notice_expires_at(notice: Notice, no_deadline_expire_days: int = 30) -> date | None:
     deadline_value = notice.get("deadline")
     if deadline_value:
         deadline = _parse_notice_date(deadline_value)

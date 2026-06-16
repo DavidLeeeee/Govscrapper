@@ -21,7 +21,7 @@ class Settings:
     runtime_dir: Path = Path("runtime")
     google_chat_webhook_url: str | None = None
     site_url: str | None = None
-    no_deadline_expire_days: int = 60
+    no_deadline_expire_days: int = 30
     openai_api_key: str | None = None
     openai_summary_model: str = "gpt-5-nano"
     openai_trend_model: str = "gpt-5.4-mini"
@@ -50,7 +50,7 @@ def get_settings() -> Settings:
         runtime_dir=Path(os.getenv("RUNTIME_DIR", "runtime")),
         google_chat_webhook_url=_read_optional_str("CHAT_API_URL") or _read_optional_str("GOOGLE_CHAT_WEBHOOK_URL"),
         site_url=_read_optional_str("SITE_URL"),
-        no_deadline_expire_days=int(os.getenv("NO_DEADLINE_EXPIRE_DAYS", "60")),
+        no_deadline_expire_days=int(os.getenv("NO_DEADLINE_EXPIRE_DAYS", "30")),
         openai_api_key=_read_optional_str("OPENAI_API_KEY"),
         openai_summary_model=_read_str("OPENAI_SUMMARY_MODEL", "gpt-5-nano"),
         openai_trend_model=_read_str("OPENAI_TREND_MODEL", "gpt-5.4-mini"),

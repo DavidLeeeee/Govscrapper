@@ -20,7 +20,7 @@ from src.services.storage_service import (
 )
 
 
-def align_expired_notices(data_dir: Path, no_deadline_expire_days: int = 60) -> dict[str, Any]:
+def align_expired_notices(data_dir: Path, no_deadline_expire_days: int = 30) -> dict[str, Any]:
     active_root = data_dir / "active"
     result: dict[str, Any] = {"sources": {}, "expired_count": 0}
 

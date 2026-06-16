@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from src.scrapers.regional_registry import REGIONAL_SOURCE_NAMES
-from src.services.storage_service import read_json_list, sort_notices
+from src.services.storage_service import manually_expire_notice, read_json_list, sort_notices
 
 
 router = APIRouter(tags=["regional-notices"])
@@ -53,6 +53,22 @@ async def list_regional_notices(request: Request) -> dict[str, Any]:
         "expired_regions": _build_regions(expired_notices),
         "count": len(notices),
         "expired_count": len(expired_notices),
+    }
+
+
+@router.post("/regional-notices/expire")
+async def expire_regional_notice(request: Request, notice: dict[str, Any]) -> dict[str, Any]:
+    data_dir: Path = request.app.state.settings.data_dir / "regional"
+    expired_notice = manually_expire_notice(data_dir, notice)
+
+    if expired_notice is None:
+        raise HTTPException(status_code=404, detail="Regional notice not found in active storage")
+
+    source = expired_notice["source"]
+    return {
+        **expired_notice,
+        "source_display_name": REGIONAL_SOURCE_NAMES.get(source, source),
+        "expired": True,
     }
 
 

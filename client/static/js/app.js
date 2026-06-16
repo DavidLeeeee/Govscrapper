@@ -1278,86 +1278,90 @@ function renderNoticeDetail(notice) {
         ${renderNoticeAnalysisPanel(notice)}
       </aside>
       <div class="notice-detail-main">
-        <div class="notice-detail-budget">
-          <span>예산액</span>
-          <strong>${escapeHtml(budgetText)}</strong>
+        <div class="notice-detail-scroll">
+          <div class="notice-detail-budget">
+            <span>예산액</span>
+            <strong>${escapeHtml(budgetText)}</strong>
+          </div>
+          <dl class="notice-detail-meta">
+            <div>
+              <dt>등록일</dt>
+              <dd>${escapeHtml(notice.posted_at)}</dd>
+            </div>
+            <div>
+              <dt>마감일</dt>
+              <dd>${escapeHtml(deadlineText)}</dd>
+            </div>
+            ${
+              notice.region
+                ? `<div>
+                    <dt>지역</dt>
+                    <dd>${escapeHtml(notice.region)}</dd>
+                  </div>`
+                : ""
+            }
+            ${
+              notice.agency
+                ? `<div>
+                    <dt>수행기관</dt>
+                    <dd>${escapeHtml(notice.agency)}</dd>
+                  </div>`
+                : ""
+            }
+          </dl>
+          <section class="notice-detail-section">
+            <h3>요약</h3>
+            <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
+          </section>
+          ${
+            detailPoints.length > 0
+              ? `<section class="notice-detail-section">
+                  <h3>핵심 내용</h3>
+                  <ul class="notice-detail-points">
+                    ${detailPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
+                  </ul>
+                </section>`
+              : ""
+          }
+          ${
+            keywords.length > 0
+              ? `<div class="notice-detail-keywords">
+                  ${keywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
+                </div>`
+              : ""
+          }
         </div>
-        <dl class="notice-detail-meta">
-          <div>
-            <dt>등록일</dt>
-            <dd>${escapeHtml(notice.posted_at)}</dd>
+        <div class="notice-detail-footer">
+          <div class="notice-detail-actions">
+            <button class="notice-share-button" type="button" data-share-key="${escapeAttribute(noticeKey)}">
+              공유
+            </button>
+            ${
+              notice.expired
+                ? ""
+                : `<button class="notice-expire-button" type="button" data-force-expire-key="${escapeAttribute(noticeKey)}">
+                    마감시키기
+                  </button>`
+            }
+            <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
           </div>
-          <div>
-            <dt>마감일</dt>
-            <dd>${escapeHtml(deadlineText)}</dd>
-          </div>
           ${
-            notice.region
-              ? `<div>
-                  <dt>지역</dt>
-                  <dd>${escapeHtml(notice.region)}</dd>
-                </div>`
-              : ""
-          }
-          ${
-            notice.agency
-              ? `<div>
-                  <dt>수행기관</dt>
-                  <dd>${escapeHtml(notice.agency)}</dd>
-                </div>`
-              : ""
-          }
-        </dl>
-        <section class="notice-detail-section">
-          <h3>요약</h3>
-          <p>${escapeHtml(summary || buildFallbackSummary(notice))}</p>
-        </section>
-        ${
-          detailPoints.length > 0
-            ? `<section class="notice-detail-section">
-                <h3>핵심 내용</h3>
-                <ul class="notice-detail-points">
-                  ${detailPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
-                </ul>
-              </section>`
-            : ""
-        }
-        ${
-          keywords.length > 0
-            ? `<div class="notice-detail-keywords">
-                ${keywords.map((keyword) => `<span>#${escapeHtml(keyword)}</span>`).join("")}
-              </div>`
-            : ""
-        }
-        <div class="notice-detail-actions">
-          <button class="notice-share-button" type="button" data-share-key="${escapeAttribute(noticeKey)}">
-            공유
-          </button>
-          ${
-            notice.expired || isRegionalNotice(notice)
+            notice.expired
               ? ""
-              : `<button class="notice-expire-button" type="button" data-force-expire-key="${escapeAttribute(noticeKey)}">
-                  마감시키기
-                </button>`
+              : `<div class="notice-expire-confirm" hidden>
+                  <strong>이 공고를 정말 마감 처리할까요?</strong>
+                  <p>${isRegionalNotice(notice) ? "지역공고 목록에서 제거됩니다. 일반 마감공고 페이지에는 표시되지 않습니다." : "공고조회 목록에서 제거되고 마감공고로 이동합니다."}</p>
+                  <div>
+                    <button class="notice-expire-confirm-button" type="button" data-confirm-expire="${escapeAttribute(noticeKey)}">
+                      마감 처리
+                    </button>
+                    <button class="notice-expire-cancel-button" type="button" data-cancel-expire>
+                      취소
+                    </button>
+                  </div>
+                </div>`
           }
-          <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
         </div>
-        ${
-          notice.expired || isRegionalNotice(notice)
-            ? ""
-            : `<div class="notice-expire-confirm" hidden>
-                <strong>이 공고를 정말 마감 처리할까요?</strong>
-                <p>공고조회 목록에서 제거되고 마감공고로 이동합니다.</p>
-                <div>
-                  <button class="notice-expire-confirm-button" type="button" data-confirm-expire="${escapeAttribute(noticeKey)}">
-                    마감 처리
-                  </button>
-                  <button class="notice-expire-cancel-button" type="button" data-cancel-expire>
-                    취소
-                  </button>
-                </div>
-              </div>`
-        }
       </div>
     </div>
   `;
@@ -1629,9 +1633,11 @@ async function toggleNoticeMark(notice) {
 
 async function forceExpireNotice(notice) {
   const key = getNoticeKey(notice);
+  const regionalNotice = isRegionalNotice(notice);
+  const endpoint = regionalNotice ? "/api/regional-notices/expire" : "/api/notices/expire";
 
   try {
-    const response = await fetch("/api/notices/expire", {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1644,15 +1650,23 @@ async function forceExpireNotice(notice) {
     }
 
     const expiredNotice = await response.json();
-    state.notices = state.notices.filter((item) => getNoticeKey(item) !== key);
-    state.expiredNotices = sortNoticesByPostedDate([
-      { ...notice, ...expiredNotice, expired: true },
-      ...state.expiredNotices.filter((item) => getNoticeKey(item) !== key),
-    ]);
-    state.sources = buildSourcesFromNotices(state.notices);
-    state.expiredSources = buildSourcesFromNotices(state.expiredNotices);
-    if (state.selectedSource !== "all" && !state.sources.some((source) => source.source === state.selectedSource)) {
-      state.selectedSource = "all";
+    if (regionalNotice) {
+      state.regionalNotices = state.regionalNotices.filter((item) => getNoticeKey(item) !== key);
+      state.regions = buildRegionsFromNotices(state.regionalNotices);
+      if (state.selectedRegion !== "all" && !state.regions.some((region) => region.region === state.selectedRegion)) {
+        state.selectedRegion = "all";
+      }
+    } else {
+      state.notices = state.notices.filter((item) => getNoticeKey(item) !== key);
+      state.expiredNotices = sortNoticesByPostedDate([
+        { ...notice, ...expiredNotice, expired: true },
+        ...state.expiredNotices.filter((item) => getNoticeKey(item) !== key),
+      ]);
+      state.sources = buildSourcesFromNotices(state.notices);
+      state.expiredSources = buildSourcesFromNotices(state.expiredNotices);
+      if (state.selectedSource !== "all" && !state.sources.some((source) => source.source === state.selectedSource)) {
+        state.selectedSource = "all";
+      }
     }
     state.bookmarks = state.bookmarks.map((item) =>
       getNoticeKey(item) === key ? { ...item, ...expiredNotice, expired: true } : item,
@@ -1661,7 +1675,9 @@ async function forceExpireNotice(notice) {
     closeNoticeModal();
     renderFilters();
     renderExpiredFilters();
+    renderRegionalFilters();
     renderNotices();
+    renderRegionalNotices();
     renderExpiredNotices();
     renderBookmarks();
     renderHome();
@@ -1687,6 +1703,18 @@ function buildSourcesFromNotices(notices) {
   )
     .map(([source, displayName]) => ({ source, display_name: displayName }))
     .sort((left, right) => left.display_name.localeCompare(right.display_name, "ko-KR"));
+}
+
+function buildRegionsFromNotices(notices) {
+  return Object.entries(
+    notices.reduce((acc, notice) => {
+      const region = String(notice.region || "지역 미상");
+      acc[region] = (acc[region] || 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .map(([region, count]) => ({ region, count }))
+    .sort((left, right) => left.region.localeCompare(right.region, "ko-KR"));
 }
 
 function syncBookmarkState(notice) {
