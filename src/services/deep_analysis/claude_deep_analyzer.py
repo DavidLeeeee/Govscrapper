@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import shutil
+import subprocess
+import threading
 from typing import Any
 
 from src.contracts.notice import Notice
@@ -38,7 +42,17 @@ class ClaudeSDKDeepAnalyzer:
                 ),
             ]
         )
-        text = asyncio.run(self._query(prompt))
+        try:
+            text = _query_claude_cli(prompt, model=self.model)
+        except Exception as cli_exc:
+            try:
+                text = _run_async_query(self._query(prompt))
+            except Exception as sdk_exc:
+                raise RuntimeError(
+                    "Claude CLI와 SDK 호출이 모두 실패했습니다. "
+                    f"CLI error: {type(cli_exc).__name__}: {cli_exc}; "
+                    f"SDK error: {type(sdk_exc).__name__}: {sdk_exc}"
+                ) from sdk_exc
         return normalize_analysis(parse_analysis_json(text))
 
     async def _query(self, prompt: str) -> str:
@@ -103,3 +117,65 @@ def _extract_message_text(message: Any) -> list[str]:
             texts.append(message["text"])
 
     return texts
+
+
+def _run_async_query(coro: Any) -> str:
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    result: dict[str, Any] = {}
+
+    def runner() -> None:
+        try:
+            result["value"] = asyncio.run(coro)
+        except BaseException as exc:
+            result["error"] = exc
+
+    thread = threading.Thread(target=runner, daemon=True)
+    thread.start()
+    thread.join()
+
+    if "error" in result:
+        raise result["error"]
+    return str(result.get("value") or "")
+
+
+def _query_claude_cli(prompt: str, model: str | None = None) -> str:
+    claude_path = shutil.which("claude")
+    if not claude_path:
+        raise RuntimeError("claude CLI를 PATH에서 찾지 못했습니다.")
+
+    command = [claude_path, "-p", "--output-format", "json"]
+    if model:
+        command.extend(["--model", model])
+    try:
+        completed = subprocess.run(
+            command,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=900,
+            check=False,
+        )
+    except Exception as cli_exc:
+        raise RuntimeError(f"claude CLI 호출에 실패했습니다: {type(cli_exc).__name__}: {cli_exc}") from cli_exc
+
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()[:1200]
+        raise RuntimeError(f"claude CLI 실패: exit={completed.returncode}: {detail}")
+
+    try:
+        data = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"claude CLI JSON 응답을 해석하지 못했습니다: {completed.stdout[:1200]}") from exc
+
+    if data.get("is_error"):
+        raise RuntimeError(f"claude CLI returned error: {str(data.get('result') or data)[:1200]}")
+
+    result = data.get("result")
+    if not isinstance(result, str) or not result.strip():
+        raise RuntimeError(f"claude CLI response did not include result text: {str(data)[:1200]}")
+    return result

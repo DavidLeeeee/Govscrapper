@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -195,7 +196,7 @@ async def create_notice_analysis(request: Request, notice: dict[str, Any]) -> di
 
     analyzer = _build_deep_analyzer(settings)
     try:
-        return analyze_notice(settings.data_dir, notice, analyzer)
+        return await asyncio.to_thread(analyze_notice, settings.data_dir, notice, analyzer)
     except HTTPException:
         raise
     except Exception as exc:
