@@ -47,7 +47,7 @@ def build_daily_scraping_message(
             deadline = _display_deadline(notice)
             day_label = _posted_day_label(notice, start_date=start_date, end_date=end_date)
             title_text = _chat_link(url, title)
-            lines.append(f"{day_label}{title_text} [마감] {deadline}")
+            lines.append(f"{day_label}{title_text} [마감일: {deadline}]")
     else:
         lines.append("- 신규 공고 없음")
 
