@@ -6,6 +6,7 @@ from __future__ import annotations
 from urllib import request
 import json
 from collections import Counter
+from datetime import date
 
 from src.contracts.notice import MarkRecord, Notice
 
@@ -29,6 +30,8 @@ def build_daily_scraping_message(
     new_mark_records: list[MarkRecord],
     total_mark_count: int,
     site_url: str | None = None,
+    start_date: str | date | None = None,
+    end_date: str | date | None = None,
 ) -> str:
     lines = [
         "*📢 정부지원사업 공고 알림 📢*",
@@ -42,8 +45,9 @@ def build_daily_scraping_message(
             title = str(notice.get("title") or "제목 없음").strip()
             url = str(notice.get("url") or "").strip()
             deadline = _display_deadline(notice)
+            day_label = _posted_day_label(notice, start_date=start_date, end_date=end_date)
             title_text = _chat_link(url, title)
-            lines.append(f"{title_text}  ⏰ 마감 {deadline}")
+            lines.append(f"{day_label}{title_text} [마감] {deadline}")
     else:
         lines.append("- 신규 공고 없음")
 
@@ -115,6 +119,24 @@ def _display_deadline(notice: Notice) -> str:
         return ai_deadline
 
     return "확인 필요"
+
+
+def _posted_day_label(notice: Notice, start_date: str | date | None, end_date: str | date | None) -> str:
+    posted_at = _date_text(notice.get("posted_at"))
+    today = _date_text(end_date)
+    yesterday = _date_text(start_date)
+
+    if posted_at and today and posted_at == today:
+        return "[오늘] "
+    if posted_at and yesterday and posted_at == yesterday:
+        return "[어제] "
+    return ""
+
+
+def _date_text(value: object) -> str:
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value or "").strip()[:10]
 
 
 def _chat_link(url: str | None, label: str) -> str:

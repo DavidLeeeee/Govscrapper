@@ -81,6 +81,8 @@ def main() -> None:
             alarm_payload["new_mark_records"],
             total_mark_count=alarm_payload["total_mark_count"],
             site_url=settings.site_url,
+            start_date=alarm_payload["start_date"],
+            end_date=alarm_payload["end_date"],
         )
         send_google_chat_message(settings.google_chat_webhook_url, message)
 
