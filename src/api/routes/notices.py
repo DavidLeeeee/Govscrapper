@@ -4,6 +4,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 
 from src.scrapers.SITES_INFO import ScrapeTarget
+from src.services.deep_analysis.claude_deep_analyzer import ClaudeSDKDeepAnalyzer
+from src.services.deep_analysis.contracts import DeepAnalyzer
 from src.services.deep_analysis.openai_deep_analyzer import OpenAIDeepAnalyzer
 from src.services.deep_analysis.service import analyze_notice, get_analysis
 from src.services.notification_service import build_shared_notice_message, send_google_chat_message
@@ -188,14 +190,38 @@ async def read_notice_analysis(request: Request, key: str) -> dict[str, Any]:
 @router.post("/notices/analysis")
 async def create_notice_analysis(request: Request, notice: dict[str, Any]) -> dict[str, Any]:
     settings = request.app.state.settings
-    if not settings.openai_api_key:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
-
     if not notice.get("source") or not notice.get("title"):
         raise HTTPException(status_code=400, detail="notice source and title are required")
 
-    analyzer = OpenAIDeepAnalyzer(
-        api_key=settings.openai_api_key,
-        model=settings.openai_analysis_model,
-    )
-    return analyze_notice(settings.data_dir, notice, analyzer)
+    analyzer = _build_deep_analyzer(settings)
+    try:
+        return analyze_notice(settings.data_dir, notice, analyzer)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+def _build_deep_analyzer(settings: Any) -> DeepAnalyzer:
+    provider = settings.analysis_provider.strip().lower()
+    if provider == "openai":
+        if not settings.openai_api_key:
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+        return OpenAIDeepAnalyzer(
+            api_key=settings.openai_api_key,
+            model=settings.openai_analysis_model,
+            max_file_chars=settings.analysis_max_file_chars,
+            max_prompt_chars=settings.analysis_max_prompt_chars,
+            max_output_tokens=settings.analysis_max_output_tokens,
+            reasoning_effort=settings.analysis_reasoning_effort,
+        )
+
+    if provider == "claude":
+        return ClaudeSDKDeepAnalyzer(
+            model=settings.claude_analysis_model,
+            max_file_chars=settings.analysis_max_file_chars,
+            max_prompt_chars=settings.analysis_max_prompt_chars,
+            max_output_tokens=settings.analysis_max_output_tokens,
+        )
+
+    raise HTTPException(status_code=500, detail=f"Unsupported ANALYSIS_PROVIDER: {settings.analysis_provider}")

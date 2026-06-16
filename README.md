@@ -47,6 +47,11 @@
 - 2025-01~2026-05 월별 키워드 트렌드 생성: `uv run python scripts/generate_trends.py --start-month 2025-01 --end-month 2026-05`
 - 특정 월 키워드 트렌드 강제 재생성: `uv run python scripts/generate_trends.py --month 2026-06 --force`
 
+- 심층 분석 provider를 OpenAI로 사용: `.env`에 `ANALYSIS_PROVIDER=openai`, `OPENAI_API_KEY=...`
+- 심층 분석 provider를 Claude SDK로 사용: `.env`에 `ANALYSIS_PROVIDER=claude`, 서버에 `claude-code-sdk` 설치 및 Claude 로그인 필요
+- Claude 심층 분석 입력량 확대 예시: `.env`에 `ANALYSIS_MAX_FILE_CHARS=50000`, `ANALYSIS_MAX_PROMPT_CHARS=180000`, `ANALYSIS_MAX_OUTPUT_TOKENS=4000`
+- OpenAI 심층 분석 reasoning 설정: `.env`에 `ANALYSIS_REASONING_EFFORT=low` (`none`, `low`, `medium`, `high`, `xhigh`)
+
 - 지역공고 오늘 수집 실행: `uv run python scripts/run_regional_scraping.py`
 - 지역공고 기간 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5`
 - 지역공고 상세 포함 수집 실행: `uv run python scripts/run_regional_scraping.py --start-date 2026-06-01 --end-date 2026-06-10 --max-pages 5 --with-detail`

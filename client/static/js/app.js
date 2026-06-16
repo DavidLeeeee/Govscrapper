@@ -1428,7 +1428,7 @@ async function analyzeNoticeDeeply(notice) {
       body: JSON.stringify(notice),
     });
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(await readErrorMessage(response));
     }
     const analysis = await response.json();
     notice.analysis = true;
@@ -1443,7 +1443,8 @@ async function analyzeNoticeDeeply(notice) {
         <div class="notice-analysis-result" data-analysis-result>${renderAnalysisResult(analysis)}</div>
       `;
     }
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "첨부파일 접근 또는 API 설정을 확인하세요.";
     if (panel) {
       panel.innerHTML = `
         <div class="notice-analysis-heading">
@@ -1451,10 +1452,22 @@ async function analyzeNoticeDeeply(notice) {
           <strong>심층 분석</strong>
         </div>
         <button class="notice-analysis-button" type="button" data-analysis-key="${escapeAttribute(getNoticeKey(notice))}">다시 분석</button>
-        <p class="notice-analysis-error">분석에 실패했습니다. 첨부파일 접근 또는 API 설정을 확인하세요.</p>
+        <p class="notice-analysis-error">분석에 실패했습니다. ${escapeHtml(message)}</p>
       `;
     }
   }
+}
+
+async function readErrorMessage(response) {
+  try {
+    const data = await response.json();
+    if (data?.detail) {
+      return String(data.detail);
+    }
+  } catch {
+    // fall through
+  }
+  return `HTTP ${response.status}`;
 }
 
 function renderAnalysisResult(analysis) {
