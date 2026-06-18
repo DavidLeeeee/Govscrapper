@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,7 @@ from src.services.deep_analysis.attachment_discovery import discover_notice_mate
 from src.services.deep_analysis.contracts import DeepAnalyzer
 from src.services.deep_analysis.file_fetcher import FetchedFile
 from src.services.deep_analysis.file_fetcher import fetch_attachment
-from src.services.deep_analysis.storage import mark_notice_analysis_completed, read_analysis, write_analysis
+from src.services.deep_analysis.storage import analysis_key, mark_notice_analysis_completed, read_analysis, write_analysis
 from src.services.deep_analysis.text_extractors import extract_file_text
 
 ANALYSIS_VERSION = 2
@@ -40,6 +41,12 @@ def analyze_notice(
         try:
             fetched = fetch_attachment(attachment)
             parsed = extract_file_text(fetched)
+            local_file = _save_local_hwp_file(data_dir, notice, fetched)
+            if local_file:
+                parsed.update(local_file)
+                if parsed.get("status") == "unsupported":
+                    parsed["status"] = "local_file"
+                    parsed["error"] = "HWP 원본을 Claude 로컬 파일 분석용으로 저장했습니다."
             attachable = _build_openai_input_file(fetched)
             if attachable:
                 parsed.update(attachable)
@@ -83,6 +90,7 @@ def analyze_notice(
                     "status": file.get("status"),
                     "error": file.get("error"),
                     "attached": bool(file.get("input_file_data")),
+                    "local_file": bool(file.get("local_path")),
                 }
                 for file in files
             ],
@@ -132,3 +140,26 @@ def _input_file_mime_type(extension: str, content_type: str) -> str | None:
     if extension == ".hwpx" or "hwpx" in content_type:
         return "application/vnd.hancom.hwpx"
     return None
+
+
+def _save_local_hwp_file(data_dir: Path, notice: Notice, file: FetchedFile) -> dict[str, str] | None:
+    extension = Path(file.name).suffix.lower()
+    content_type = file.content_type.lower()
+    if extension != ".hwp" and ("hwp" not in content_type or "hwpx" in content_type):
+        return None
+    if not file.content:
+        return None
+
+    directory = data_dir / "analysis_files" / analysis_key(notice)
+    directory.mkdir(parents=True, exist_ok=True)
+    filename = _safe_filename(file.name or "attachment.hwp")
+    if not filename.lower().endswith(".hwp"):
+        filename = f"{filename}.hwp"
+    path = directory / filename
+    path.write_bytes(file.content)
+    return {"local_path": str(path.resolve())}
+
+
+def _safe_filename(value: str) -> str:
+    name = Path(value).name.strip() or "attachment.hwp"
+    return re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name)[:180]

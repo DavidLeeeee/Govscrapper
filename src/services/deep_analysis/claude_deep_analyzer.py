@@ -30,11 +30,20 @@ class ClaudeSDKDeepAnalyzer:
         self.max_output_tokens = max_output_tokens
 
     def analyze(self, notice: Notice, material: dict[str, Any]) -> dict[str, Any]:
+        local_file_paths = _local_file_paths(material)
+        tool_instruction = (
+            "WebFetch, WebSearch, 브라우저 도구를 사용하지 마라. "
+            "아래 로컬 파일 경로가 제공된 경우 해당 파일을 직접 읽고 분석해라. "
+            "파일을 읽을 수 없으면 반드시 JSON 필드에 실패 사유를 적어라."
+            if local_file_paths
+            else "WebFetch, WebSearch, 브라우저, 파일 시스템 도구를 사용하지 마라. 프롬프트에 포함된 텍스트만 근거로 답해라."
+        )
         prompt = "\n\n".join(
             [
                 SYSTEM_PROMPT,
                 "반드시 JSON 객체 하나만 출력해라. Markdown 코드블록, 사전 설명, 사후 설명을 쓰지 마라.",
-                "WebFetch, WebSearch, 브라우저, 파일 시스템 도구를 사용하지 마라. 프롬프트에 포함된 텍스트만 근거로 답해라.",
+                tool_instruction,
+                _format_local_file_prompt(local_file_paths),
                 build_deep_analysis_prompt(
                     notice,
                     material,
@@ -131,6 +140,28 @@ def _extract_message_text(message: Any) -> list[str]:
             texts.append(message["text"])
 
     return texts
+
+
+def _local_file_paths(material: dict[str, Any]) -> list[str]:
+    paths: list[str] = []
+    for file in material.get("files", []):
+        if not isinstance(file, dict):
+            continue
+        path = str(file.get("local_path") or "").strip()
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _format_local_file_prompt(paths: list[str]) -> str:
+    if not paths:
+        return ""
+    lines = [
+        "[로컬 첨부파일]",
+        "다음 파일은 서버가 공고 첨부파일을 다운로드해 저장한 원본이다. HWP 파일이면 직접 읽기/추출을 시도해라.",
+    ]
+    lines.extend(f"- {path}" for path in paths)
+    return "\n".join(lines)
 
 
 def _run_async_query(coro: Any) -> str:
