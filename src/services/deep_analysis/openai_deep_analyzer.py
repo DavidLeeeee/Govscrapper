@@ -72,7 +72,11 @@ class OpenAIDeepAnalyzer:
         except requests.HTTPError as exc:
             detail = response.text[:1200]
             raise RuntimeError(f"OpenAI analysis request failed: {response.status_code} {detail}") from exc
-        return normalize_analysis(_parse_response(response.json()))
+        response_data = response.json()
+        return {
+            **normalize_analysis(_parse_response(response_data)),
+            "analysis_usage": _build_openai_usage(response_data, self.model),
+        }
 
 
 def _build_user_content(
@@ -128,3 +132,19 @@ def _parse_response(data: dict[str, Any]) -> dict[str, Any]:
                 return parse_analysis_json(text)
 
     raise ValueError("OpenAI deep analysis response did not include output text")
+
+
+def _build_openai_usage(data: dict[str, Any], model: str) -> dict[str, Any]:
+    usage = data.get("usage")
+    if not isinstance(usage, dict):
+        usage = {}
+
+    return {
+        "provider": "openai",
+        "model": data.get("model") or model,
+        "input_tokens": usage.get("input_tokens"),
+        "output_tokens": usage.get("output_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "input_token_details": usage.get("input_tokens_details"),
+        "output_token_details": usage.get("output_tokens_details"),
+    }

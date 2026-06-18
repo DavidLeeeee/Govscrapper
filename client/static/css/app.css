@@ -1392,6 +1392,11 @@ body.modal-open {
   background: #dde6ef;
 }
 
+.notice-modal-panel.analysis-running .notice-modal-close {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .notice-detail-header {
   display: flex;
   flex-wrap: wrap;
@@ -1509,6 +1514,36 @@ body.modal-open {
   color: #52616f;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.notice-analysis-loading {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 18px 10px;
+  color: #52616f;
+  text-align: center;
+}
+
+.notice-analysis-loading p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.notice-analysis-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #c8eee7;
+  border-top-color: #0f766e;
+  border-radius: 50%;
+  animation: notice-analysis-spin 850ms linear infinite;
+}
+
+@keyframes notice-analysis-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .notice-analysis-error {

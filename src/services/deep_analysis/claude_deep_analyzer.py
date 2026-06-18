@@ -42,18 +42,31 @@ class ClaudeSDKDeepAnalyzer:
                 ),
             ]
         )
+        usage: dict[str, Any]
         try:
-            text = _query_claude_cli(prompt, model=self.model)
+            text, usage = _query_claude_cli(prompt, model=self.model)
         except Exception as cli_exc:
             try:
                 text = _run_async_query(self._query(prompt))
+                usage = {
+                    "provider": "claude",
+                    "transport": "sdk",
+                    "model": self.model,
+                    "input_tokens": None,
+                    "output_tokens": None,
+                    "total_tokens": None,
+                    "total_cost_usd": None,
+                }
             except Exception as sdk_exc:
                 raise RuntimeError(
                     "Claude CLI와 SDK 호출이 모두 실패했습니다. "
                     f"CLI error: {type(cli_exc).__name__}: {cli_exc}; "
                     f"SDK error: {type(sdk_exc).__name__}: {sdk_exc}"
                 ) from sdk_exc
-        return normalize_analysis(parse_analysis_json(text))
+        return {
+            **normalize_analysis(parse_analysis_json(text)),
+            "analysis_usage": usage,
+        }
 
     async def _query(self, prompt: str) -> str:
         try:
@@ -142,7 +155,7 @@ def _run_async_query(coro: Any) -> str:
     return str(result.get("value") or "")
 
 
-def _query_claude_cli(prompt: str, model: str | None = None) -> str:
+def _query_claude_cli(prompt: str, model: str | None = None) -> tuple[str, dict[str, Any]]:
     claude_path = shutil.which("claude")
     if not claude_path:
         raise RuntimeError("claude CLI를 PATH에서 찾지 못했습니다.")
@@ -178,4 +191,41 @@ def _query_claude_cli(prompt: str, model: str | None = None) -> str:
     result = data.get("result")
     if not isinstance(result, str) or not result.strip():
         raise RuntimeError(f"claude CLI response did not include result text: {str(data)[:1200]}")
-    return result
+    return result, _build_claude_cli_usage(data, model)
+
+
+def _build_claude_cli_usage(data: dict[str, Any], requested_model: str | None) -> dict[str, Any]:
+    usage = data.get("usage")
+    if not isinstance(usage, dict):
+        usage = {}
+
+    model_usage = data.get("modelUsage")
+    if isinstance(model_usage, dict) and model_usage:
+        actual_model = next(iter(model_usage.keys()))
+    else:
+        actual_model = requested_model
+
+    input_tokens = usage.get("input_tokens")
+    cache_creation_tokens = usage.get("cache_creation_input_tokens")
+    cache_read_tokens = usage.get("cache_read_input_tokens")
+    output_tokens = usage.get("output_tokens")
+
+    token_parts = [
+        value
+        for value in (input_tokens, cache_creation_tokens, cache_read_tokens, output_tokens)
+        if isinstance(value, int)
+    ]
+
+    return {
+        "provider": "claude",
+        "transport": "cli",
+        "model": actual_model,
+        "input_tokens": input_tokens,
+        "cache_creation_input_tokens": cache_creation_tokens,
+        "cache_read_input_tokens": cache_read_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": sum(token_parts) if token_parts else None,
+        "total_cost_usd": data.get("total_cost_usd"),
+        "duration_ms": data.get("duration_ms"),
+        "duration_api_ms": data.get("duration_api_ms"),
+    }

@@ -70,6 +70,7 @@ const state = {
   loadingRegionalNotices: false,
   loadedRegionalNotices: false,
   activeModalKey: "",
+  analysisInProgress: false,
 };
 
 function setActiveNav() {
@@ -1157,6 +1158,9 @@ document.addEventListener("click", async (event) => {
   }
 
   if (event.target.closest("[data-modal-close]")) {
+    if (state.analysisInProgress) {
+      return;
+    }
     closeNoticeModal();
     return;
     }
@@ -1227,6 +1231,9 @@ document.addEventListener("click", async (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && noticeModal && !noticeModal.hidden) {
+    if (state.analysisInProgress) {
+      return;
+    }
     closeNoticeModal();
   }
 });
@@ -1249,6 +1256,9 @@ function openNoticeModal(notice) {
 
 function closeNoticeModal() {
   if (!noticeModal) {
+    return;
+  }
+  if (state.analysisInProgress) {
     return;
   }
 
@@ -1412,6 +1422,8 @@ async function loadNoticeAnalysis(notice) {
 
 async function analyzeNoticeDeeply(notice) {
   const panel = noticeModalContent?.querySelector(`[data-analysis-panel-key="${cssEscape(getNoticeKey(notice))}"]`);
+  state.analysisInProgress = true;
+  noticeModalPanel?.classList.add("analysis-running");
   if (panel) {
     panel.innerHTML = `
       <div class="notice-analysis-heading">
@@ -1419,7 +1431,10 @@ async function analyzeNoticeDeeply(notice) {
         <strong>심층 분석</strong>
       </div>
       <button class="notice-analysis-button" type="button" disabled>분석 중</button>
-      <div class="notice-analysis-empty">첨부파일을 수집하고 AI 분석을 진행 중입니다. 파일 수와 크기에 따라 시간이 걸릴 수 있습니다.</div>
+      <div class="notice-analysis-loading" role="status" aria-live="polite">
+        <span class="notice-analysis-spinner" aria-hidden="true"></span>
+        <p>첨부파일을 수집하고 AI 분석을 진행 중입니다. 파일 수와 크기에 따라 시간이 걸릴 수 있습니다.</p>
+      </div>
     `;
   }
 
@@ -1459,6 +1474,9 @@ async function analyzeNoticeDeeply(notice) {
         <p class="notice-analysis-error">분석에 실패했습니다. ${escapeHtml(message)}</p>
       `;
     }
+  } finally {
+    state.analysisInProgress = false;
+    noticeModalPanel?.classList.remove("analysis-running");
   }
 }
 
