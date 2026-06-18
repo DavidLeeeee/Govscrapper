@@ -195,8 +195,15 @@ async def create_notice_analysis(request: Request, notice: dict[str, Any]) -> di
         raise HTTPException(status_code=400, detail="notice source and title are required")
 
     analyzer = _build_deep_analyzer(settings)
+    fallback_analyzer = _build_hwp_fallback_analyzer(settings)
     try:
-        return await asyncio.to_thread(analyze_notice, settings.data_dir, notice, analyzer)
+        return await asyncio.to_thread(
+            analyze_notice,
+            settings.data_dir,
+            notice,
+            analyzer,
+            fallback_analyzer=fallback_analyzer,
+        )
     except HTTPException:
         raise
     except Exception as exc:
@@ -226,3 +233,19 @@ def _build_deep_analyzer(settings: Any) -> DeepAnalyzer:
         )
 
     raise HTTPException(status_code=500, detail=f"Unsupported ANALYSIS_PROVIDER: {settings.analysis_provider}")
+
+
+def _build_hwp_fallback_analyzer(settings: Any) -> DeepAnalyzer | None:
+    provider = str(settings.analysis_hwp_fallback_provider or "").strip().lower()
+    if provider != "openai":
+        return None
+    if not settings.openai_api_key:
+        raise HTTPException(status_code=500, detail="ANALYSIS_HWP_FALLBACK_PROVIDER=openai requires OPENAI_API_KEY")
+    return OpenAIDeepAnalyzer(
+        api_key=settings.openai_api_key,
+        model=settings.openai_analysis_model,
+        max_file_chars=settings.analysis_max_file_chars,
+        max_prompt_chars=settings.analysis_max_prompt_chars,
+        max_output_tokens=settings.analysis_max_output_tokens,
+        reasoning_effort=settings.analysis_reasoning_effort,
+    )

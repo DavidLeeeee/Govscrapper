@@ -24,6 +24,7 @@ def analyze_notice(
     data_dir: Path,
     notice: Notice,
     analyzer: DeepAnalyzer,
+    fallback_analyzer: DeepAnalyzer | None = None,
     max_files: int = 5,
 ) -> dict[str, Any]:
     cached = read_analysis(data_dir, notice)
@@ -62,7 +63,13 @@ def analyze_notice(
         "attachments": materials.get("attachments") or [],
         "files": files,
     }
-    analysis = analyzer.analyze(notice, analysis_input)
+    selected_analyzer = fallback_analyzer if fallback_analyzer and _needs_hwp_fallback(files) else analyzer
+    analysis = selected_analyzer.analyze(notice, analysis_input)
+    if selected_analyzer is fallback_analyzer:
+        analysis["analysis_fallback"] = {
+            "reason": "hwp_without_extracted_text",
+            "provider": "openai",
+        }
     stored = write_analysis(
         data_dir,
         notice,
@@ -84,6 +91,16 @@ def analyze_notice(
     )
     mark_notice_analysis_completed(data_dir, notice)
     return stored
+
+
+def _needs_hwp_fallback(files: list[dict[str, Any]]) -> bool:
+    for file in files:
+        name = str(file.get("name") or "").lower()
+        content_type = str(file.get("content_type") or "").lower()
+        is_hwp = name.endswith(".hwp") or ("hwp" in content_type and "hwpx" not in content_type)
+        if is_hwp and not str(file.get("text") or "").strip():
+            return True
+    return False
 
 
 def _build_openai_input_file(file: FetchedFile) -> dict[str, str] | None:

@@ -28,6 +28,7 @@ class Settings:
     openai_analysis_model: str = "gpt-5.4-mini"
     claude_analysis_model: str | None = None
     analysis_provider: str = "openai"
+    analysis_hwp_fallback_provider: str | None = None
     analysis_max_file_chars: int = 14000
     analysis_max_prompt_chars: int = 50000
     analysis_max_output_tokens: int = 1600
@@ -57,6 +58,7 @@ def get_settings() -> Settings:
         openai_analysis_model=_read_str("OPENAI_ANALYSIS_MODEL", _read_str("OPENAI_TREND_MODEL", "gpt-5.4-mini")),
         claude_analysis_model=_read_optional_str("CLAUDE_ANALYSIS_MODEL"),
         analysis_provider=analysis_provider,
+        analysis_hwp_fallback_provider=_read_optional_str("ANALYSIS_HWP_FALLBACK_PROVIDER"),
         analysis_max_file_chars=int(os.getenv("ANALYSIS_MAX_FILE_CHARS", default_file_chars)),
         analysis_max_prompt_chars=int(os.getenv("ANALYSIS_MAX_PROMPT_CHARS", default_prompt_chars)),
         analysis_max_output_tokens=int(os.getenv("ANALYSIS_MAX_OUTPUT_TOKENS", default_output_tokens)),
