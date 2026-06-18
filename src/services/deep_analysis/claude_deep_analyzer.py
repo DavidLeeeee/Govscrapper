@@ -33,7 +33,8 @@ class ClaudeSDKDeepAnalyzer:
         prompt = "\n\n".join(
             [
                 SYSTEM_PROMPT,
-                "반드시 JSON만 출력해라. Markdown 코드블록을 쓰지 마라.",
+                "반드시 JSON 객체 하나만 출력해라. Markdown 코드블록, 사전 설명, 사후 설명을 쓰지 마라.",
+                "WebFetch, WebSearch, 브라우저, 파일 시스템 도구를 사용하지 마라. 프롬프트에 포함된 텍스트만 근거로 답해라.",
                 build_deep_analysis_prompt(
                     notice,
                     material,

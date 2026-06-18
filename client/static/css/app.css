@@ -1392,11 +1392,6 @@ body.modal-open {
   background: #dde6ef;
 }
 
-.notice-modal-panel.analysis-running .notice-modal-close {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .notice-detail-header {
   display: flex;
   flex-wrap: wrap;

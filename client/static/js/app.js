@@ -70,7 +70,6 @@ const state = {
   loadingRegionalNotices: false,
   loadedRegionalNotices: false,
   activeModalKey: "",
-  analysisInProgress: false,
 };
 
 function setActiveNav() {
@@ -1158,9 +1157,6 @@ document.addEventListener("click", async (event) => {
   }
 
   if (event.target.closest("[data-modal-close]")) {
-    if (state.analysisInProgress) {
-      return;
-    }
     closeNoticeModal();
     return;
     }
@@ -1231,9 +1227,6 @@ document.addEventListener("click", async (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && noticeModal && !noticeModal.hidden) {
-    if (state.analysisInProgress) {
-      return;
-    }
     closeNoticeModal();
   }
 });
@@ -1256,9 +1249,6 @@ function openNoticeModal(notice) {
 
 function closeNoticeModal() {
   if (!noticeModal) {
-    return;
-  }
-  if (state.analysisInProgress) {
     return;
   }
 
@@ -1422,8 +1412,6 @@ async function loadNoticeAnalysis(notice) {
 
 async function analyzeNoticeDeeply(notice) {
   const panel = noticeModalContent?.querySelector(`[data-analysis-panel-key="${cssEscape(getNoticeKey(notice))}"]`);
-  state.analysisInProgress = true;
-  noticeModalPanel?.classList.add("analysis-running");
   if (panel) {
     panel.innerHTML = `
       <div class="notice-analysis-heading">
@@ -1474,9 +1462,6 @@ async function analyzeNoticeDeeply(notice) {
         <p class="notice-analysis-error">분석에 실패했습니다. ${escapeHtml(message)}</p>
       `;
     }
-  } finally {
-    state.analysisInProgress = false;
-    noticeModalPanel?.classList.remove("analysis-running");
   }
 }
 
