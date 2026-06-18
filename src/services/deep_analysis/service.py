@@ -94,6 +94,13 @@ def analyze_notice(
 
 
 def _needs_hwp_fallback(files: list[dict[str, Any]]) -> bool:
+    # OpenAI Responses file input does not support legacy .hwp binary files.
+    # Keep this hook for future converted HWP text/PDF support, but do not
+    # fallback on raw HWP-only failures because it only produces a 400 error.
+    return False
+
+
+def _has_unparsed_hwp(files: list[dict[str, Any]]) -> bool:
     for file in files:
         name = str(file.get("name") or "").lower()
         content_type = str(file.get("content_type") or "").lower()
@@ -122,8 +129,6 @@ def _build_openai_input_file(file: FetchedFile) -> dict[str, str] | None:
 def _input_file_mime_type(extension: str, content_type: str) -> str | None:
     if extension == ".pdf" or "pdf" in content_type:
         return "application/pdf"
-    if extension == ".hwp" or "hwp" in content_type:
-        return "application/x-hwp"
     if extension == ".hwpx" or "hwpx" in content_type:
         return "application/vnd.hancom.hwpx"
     return None
