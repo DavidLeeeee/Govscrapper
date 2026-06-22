@@ -35,7 +35,7 @@ def main() -> None:
 
         result = run_scraping(
             data_dir=settings.data_dir,
-            scrapers=build_scrapers(max_pages=args.max_pages) if args.max_pages else SCRAPERS,
+            scrapers=_build_target_scrapers(args),
             options=options,
             google_chat_webhook_url=None,
             summarizer=summarizer,
@@ -49,6 +49,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--start-date", help="수집 시작 등록일. 예: 2026-06-11")
     parser.add_argument("--end-date", help="수집 종료 등록일. 기본값: start-date 또는 오늘")
     parser.add_argument("--max-pages", type=int, help="각 사이트에서 조회할 최대 페이지 수. 긴 백필에서는 크게 지정한다.")
+    parser.add_argument(
+        "--source",
+        action="append",
+        help="특정 source만 수집한다. 여러 번 지정하거나 콤마로 구분 가능. 예: --source nipa --source nia",
+    )
     return parser.parse_args()
 
 
@@ -62,6 +67,41 @@ def _build_scrape_options(args: argparse.Namespace, today: date) -> ScrapeOption
         raise ValueError("--end-date는 --start-date보다 빠를 수 없습니다.")
 
     return ScrapeOptions.backfill(start_date=start_date, end_date=end_date)
+
+
+def _build_target_scrapers(args: argparse.Namespace):
+    scrapers = build_scrapers(max_pages=args.max_pages) if args.max_pages else SCRAPERS
+    requested_sources = _parse_sources(args.source)
+    if not requested_sources:
+        return scrapers
+
+    unknown_sources = sorted(source for source in requested_sources if source not in scrapers)
+    if unknown_sources:
+        available_sources = ", ".join(sorted(scrapers))
+        raise ValueError(
+            f"알 수 없는 source입니다: {', '.join(unknown_sources)}. "
+            f"사용 가능 source: {available_sources}"
+        )
+
+    return {
+        source: scraper
+        for source, scraper in scrapers.items()
+        if source in requested_sources
+    }
+
+
+def _parse_sources(values: list[str] | None) -> set[str]:
+    if not values:
+        return set()
+
+    sources: set[str] = set()
+    for value in values:
+        sources.update(
+            source.strip()
+            for source in value.split(",")
+            if source.strip()
+        )
+    return sources
 
 
 if __name__ == "__main__":

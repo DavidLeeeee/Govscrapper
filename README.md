@@ -31,6 +31,8 @@
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
 - 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-05-22 --end-date 2026-05-29`
+- 특정 source만 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --source nipa --start-date 2026-01-01 --end-date 2026-06-22 --max-pages 50`
+- 여러 source만 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --source nipa,nia --start-date 2026-01-01 --end-date 2026-06-22 --max-pages 50`
 - 2025-01~2026-05 제목용 빠른 백필(AI 요약 제외, Linux): `SUMMARIZE_NOTICES=false uv run python scripts/run_scraping.py --start-date 2025-01-01 --end-date 2026-05-31 --max-pages 500`
 - 2025-01~2026-05 제목용 빠른 백필(AI 요약 제외, PowerShell): `$env:SUMMARIZE_NOTICES="false"; uv run python scripts/run_scraping.py --start-date 2025-01-01 --end-date 2026-05-31 --max-pages 500`
 <!-- - 전체 스크래퍼 백필 실행: `uv run python scripts/backfill_all.py --start-date 2026-06-01 --end-date 2026-06-10`  -->

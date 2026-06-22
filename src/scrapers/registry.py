@@ -1,6 +1,7 @@
 from src.scrapers._iris import IrisBtinSituScraper
 from src.scrapers._kisa import KisaBidScraper
 from src.scrapers._nia import NiaBidScraper
+from src.scrapers._nipa import NipaScraper
 from src.scrapers._seoul import SeoulRndScraper
 from src.scrapers.scrap_interface import Scraper
 
@@ -11,6 +12,7 @@ def build_scraper_instances(max_pages: int | None = None) -> list[Scraper]:
             IrisBtinSituScraper(),
             KisaBidScraper(),
             NiaBidScraper(),
+            NipaScraper(),
             SeoulRndScraper(),
         ]
 
@@ -18,6 +20,7 @@ def build_scraper_instances(max_pages: int | None = None) -> list[Scraper]:
         IrisBtinSituScraper(max_pages=max_pages),
         KisaBidScraper(max_pages=max_pages),
         NiaBidScraper(max_pages=max_pages),
+        NipaScraper(max_pages=max_pages),
         SeoulRndScraper(max_pages=max_pages),
     ]
 

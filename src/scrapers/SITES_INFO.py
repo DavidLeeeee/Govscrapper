@@ -15,7 +15,7 @@ class ScrapeTarget(Enum):
     NIA = ("nia", "https://www.nia.or.kr", "한국지능정보사회진흥원") # 크롤링하기 불편한 -완전 자율 형태-의 글... 인데 유용한 공고 있어보이기도 함
     KISA_BID = ("kisa_bid", "https://www.kisa.or.kr/403", "KISA 입찰공고")
     # KOSA = ("kosa", "https://www.sw.or.kr", "KOSA 정부지원사업")
-    # NIPA = ("nipa", "https://www.nipa.kr", "정보통신산업진흥원")
+    NIPA = ("nipa", "https://www.nipa.kr", "정보통신산업진흥원") # https://www.nipa.kr/home/2-2?curPage=1(사업공고), https://www.nipa.kr/home/2-3?curPage=1(입찰 공고)
     # IITP = ("iitp", "https://www.iitp.kr", "정보통신기획평가원") # [IRIS 통합] 용역 중심, 나라장터: https://www.g2b.go.kr/link/FIUA006_01/single/?untySrchSeCd=BD&rowCnt=&instCd=D557091&demaInstNm=&hghrkInstCd=&prcmBsneAreaCd=%EC%A0%84%EC%B2%B4+%EC%A1%B0070001+%EC%A1%B0070002+%EC%A1%B0070003+%EC%A1%B0070004+%EC%A1%B0070005&prcmMthoSeCd=&frcpYn=N&laseYn=N&rsrvYn=N&chkInstCd=&urlSrchSeCd=instCd&demaInstCd=IN0100000093769&prcmMaagSeCd=
     # KDATA = ("kdata", "https://www.kdata.or.kr", "한국데이터산업진흥원") # 별 내용 없어보임
     # KISIA = ("kisia", "https://www.ksecurity.or.kr", "정보보호산업진흥포털") # 공고관련 글은 안보임
