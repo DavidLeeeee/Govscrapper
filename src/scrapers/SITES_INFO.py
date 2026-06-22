@@ -10,7 +10,7 @@ class ScrapeTarget(Enum):
     IRIS_BTIN_SITU = ("iris_btin_situ", "https://www.iris.go.kr/contents/retrieveBsnsAncmBtinSituListView.do", "IRIS 사업공고 현황")
     # NTIS = ("ntis", "https://www.ntis.go.kr", "NTIS 국가R&D통합공고") # 개인정보보호위원회, 과학기술정보통신부 한정
     # SMTECH = ("smtech", "https://www.smtech.go.kr", "SMTECH 중소기업기술개발사업") # 대상은 아닌듯 하다 <- 인력 끌어오기
-
+    KGLOBAL = ("kglobal", "https://www.k-global.kr/support/support.do", "창업벤처지원 브랜드")
     # SW / AI / ICT 전문기관
     NIA = ("nia", "https://www.nia.or.kr", "한국지능정보사회진흥원") # 크롤링하기 불편한 -완전 자율 형태-의 글... 인데 유용한 공고 있어보이기도 함
     KISA_BID = ("kisa_bid", "https://www.kisa.or.kr/403", "KISA 입찰공고")
@@ -19,7 +19,7 @@ class ScrapeTarget(Enum):
     # IITP = ("iitp", "https://www.iitp.kr", "정보통신기획평가원") # [IRIS 통합] 용역 중심, 나라장터: https://www.g2b.go.kr/link/FIUA006_01/single/?untySrchSeCd=BD&rowCnt=&instCd=D557091&demaInstNm=&hghrkInstCd=&prcmBsneAreaCd=%EC%A0%84%EC%B2%B4+%EC%A1%B0070001+%EC%A1%B0070002+%EC%A1%B0070003+%EC%A1%B0070004+%EC%A1%B0070005&prcmMthoSeCd=&frcpYn=N&laseYn=N&rsrvYn=N&chkInstCd=&urlSrchSeCd=instCd&demaInstCd=IN0100000093769&prcmMaagSeCd=
     # KDATA = ("kdata", "https://www.kdata.or.kr", "한국데이터산업진흥원") # 별 내용 없어보임
     # KISIA = ("kisia", "https://www.ksecurity.or.kr", "정보보호산업진흥포털") # 공고관련 글은 안보임
-
+    AICA = ("AICA", "https://www.aica-gj.kr/sub.php?PID=02", "인공지능산업융합사업단")
     # 산업기술 / 기술사업화
     # KEIT = ("keit", "https://www.keit.re.kr", "한국산업기술기획평가원") # 애매하다...
     # KIAT = ("kiat", "https://www.kiat.or.kr", "한국산업기술진흥원") # 애매하다....

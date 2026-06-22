@@ -1,4 +1,5 @@
 from src.scrapers._iris import IrisBtinSituScraper
+from src.scrapers._kglobal import KglobalScraper
 from src.scrapers._kisa import KisaBidScraper
 from src.scrapers._nia import NiaBidScraper
 from src.scrapers._nipa import NipaScraper
@@ -10,6 +11,7 @@ def build_scraper_instances(max_pages: int | None = None) -> list[Scraper]:
     if max_pages is None:
         return [
             IrisBtinSituScraper(),
+            KglobalScraper(),
             KisaBidScraper(),
             NiaBidScraper(),
             NipaScraper(),
@@ -18,6 +20,7 @@ def build_scraper_instances(max_pages: int | None = None) -> list[Scraper]:
 
     return [
         IrisBtinSituScraper(max_pages=max_pages),
+        KglobalScraper(max_pages=max_pages),
         KisaBidScraper(max_pages=max_pages),
         NiaBidScraper(max_pages=max_pages),
         NipaScraper(max_pages=max_pages),
