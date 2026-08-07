@@ -11,6 +11,7 @@ class ScrapeTarget(Enum):
     # NTIS = ("ntis", "https://www.ntis.go.kr", "NTIS 국가R&D통합공고") # 개인정보보호위원회, 과학기술정보통신부 한정
     # SMTECH = ("smtech", "https://www.smtech.go.kr", "SMTECH 중소기업기술개발사업") # 대상은 아닌듯 하다 <- 인력 끌어오기
     KGLOBAL = ("kglobal", "https://www.k-global.kr/support/support.do", "창업벤처지원 브랜드")
+    ETRI_EBID_PROGRESS = ("etri_ebid_progress", "https://ebid.etri.re.kr/ebid/ebid/ebidCustProgressList.do", "ETRI 전자입찰 진행공고")
     # SW / AI / ICT 전문기관
     NIA = ("nia", "https://www.nia.or.kr", "한국지능정보사회진흥원") # 크롤링하기 불편한 -완전 자율 형태-의 글... 인데 유용한 공고 있어보이기도 함
     KISA_BID = ("kisa_bid", "https://www.kisa.or.kr/403", "KISA 입찰공고")

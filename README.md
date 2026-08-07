@@ -32,6 +32,7 @@
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
 - 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-05-22 --end-date 2026-05-29`
 - 특정 source만 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --source nipa --start-date 2026-01-01 --end-date 2026-06-22 --max-pages 50`
+- ETRI 전자입찰 진행공고만 기간 스크래핑 실행: `uv run python scripts/run_scraping.py --source etri_ebid_progress --start-date 2026-07-30 --end-date 2026-10-06 --max-pages 3`
 - KGLOBAL만 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --source kglobal --start-date 2026-01-01 --end-date 2026-06-22 --max-pages 20`
 - AICA만 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --source AICA --start-date 2026-01-01 --end-date 2026-06-22 --max-pages 20`
 - 여러 source만 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --source nipa,nia --start-date 2026-01-01 --end-date 2026-06-22 --max-pages 50`
