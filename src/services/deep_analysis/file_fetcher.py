@@ -6,6 +6,7 @@ from urllib.parse import parse_qsl, urlparse
 
 import requests
 
+from src.services.etri_ebid_service import get_etri_session
 from src.services.detail_fetch_service import DEFAULT_HEADERS
 
 
@@ -27,10 +28,11 @@ def fetch_attachment(attachment: dict[str, str], timeout: int = 20, max_bytes: i
         headers["Referer"] = referer
 
     data = _parse_attachment_data(str(attachment.get("data") or ""))
+    session = _build_session_for_url(url)
     if method == "POST":
-        response = requests.post(url, data=data, headers=headers, timeout=timeout)
+        response = session.post(url, data=data, headers=headers, timeout=timeout)
     else:
-        response = requests.get(url, params=data or None, headers=headers, timeout=timeout)
+        response = session.get(url, params=data or None, headers=headers, timeout=timeout)
     response.raise_for_status()
 
     content = response.content[: max_bytes + 1]
@@ -43,6 +45,12 @@ def fetch_attachment(attachment: dict[str, str], timeout: int = 20, max_bytes: i
         content_type=response.headers.get("Content-Type", ""),
         content=content,
     )
+
+
+def _build_session_for_url(url: str) -> requests.Session:
+    if urlparse(url).netloc == "ebid.etri.re.kr":
+        return get_etri_session()
+    return requests.Session()
 
 
 def _filename_from_url(url: str) -> str:

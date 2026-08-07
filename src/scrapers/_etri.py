@@ -496,7 +496,7 @@ def _format_query_date(value: str) -> str:
 
 
 def _build_bid_url(bid_no: str) -> str:
-    return f"{LIST_URL}?{urlencode({'search': 'Y', 'sch_biNo': bid_no})}"
+    return f"/api/etri/original?{urlencode({'bid_no': bid_no})}"
 
 
 def _dedupe_notices(notices: list[Notice]) -> list[Notice]:

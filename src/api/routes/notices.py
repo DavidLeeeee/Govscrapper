@@ -1,14 +1,17 @@
 import asyncio
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse
 
 from src.scrapers.SITES_INFO import ScrapeTarget
 from src.services.deep_analysis.claude_deep_analyzer import ClaudeSDKDeepAnalyzer
 from src.services.deep_analysis.contracts import DeepAnalyzer
 from src.services.deep_analysis.openai_deep_analyzer import OpenAIDeepAnalyzer
 from src.services.deep_analysis.service import analyze_notice, get_analysis
+from src.services.etri_ebid_service import debug_etri_detail_candidates, fetch_etri_detail_html
 from src.services.notification_service import build_shared_notice_message, send_google_chat_message
 from src.services.marked_service import apply_marked_state, list_marked_notices, mark_notice, unmark_notice
 from src.services.storage_service import manually_expire_notice, merge_notices, notice_key_string, read_json_list, sort_notices
@@ -37,6 +40,7 @@ async def list_notices(request: Request) -> dict[str, Any]:
             notices.append(
                 {
                     **notice,
+                    **_source_overrides(notice),
                     "source_display_name": SOURCE_NAMES.get(source, source),
                 }
             )
@@ -47,6 +51,7 @@ async def list_notices(request: Request) -> dict[str, Any]:
             expired_notices.append(
                 {
                     **notice,
+                    **_source_overrides(notice),
                     "source_display_name": SOURCE_NAMES.get(source, source),
                     "expired": True,
                 }
@@ -115,6 +120,47 @@ def _build_bookmarks(
         )
 
     return sort_notices(bookmarks)
+
+
+def _source_overrides(notice: dict[str, Any]) -> dict[str, Any]:
+    if notice.get("source") != "etri_ebid_progress":
+        return {}
+
+    bid_no = str(notice.get("pblanc_id") or "").strip()
+    if not bid_no:
+        return {}
+
+    return {
+        "url": f"/api/etri/original?{urlencode({'bid_no': bid_no})}",
+    }
+
+
+@router.get("/etri/original", response_class=HTMLResponse)
+async def read_etri_original(bid_no: str) -> HTMLResponse:
+    bid_no = bid_no.strip()
+    if not bid_no:
+        raise HTTPException(status_code=400, detail="bid_no is required")
+
+    try:
+        html = await asyncio.to_thread(fetch_etri_detail_html, bid_no)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"ETRI detail fetch failed: {exc}") from exc
+
+    return HTMLResponse(html)
+
+
+@router.get("/etri/debug-detail")
+async def debug_etri_original(bid_no: str) -> dict[str, Any]:
+    bid_no = bid_no.strip()
+    if not bid_no:
+        raise HTTPException(status_code=400, detail="bid_no is required")
+
+    try:
+        candidates = await asyncio.to_thread(debug_etri_detail_candidates, bid_no)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"ETRI detail debug failed: {exc}") from exc
+
+    return {"bid_no": bid_no, "candidates": candidates}
 
 
 @router.post("/notices/marks")

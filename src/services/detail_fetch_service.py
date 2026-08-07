@@ -16,6 +16,14 @@ DEFAULT_HEADERS = {
 
 
 def fetch_notice_detail_text(notice: Notice, timeout: int = 10) -> str:
+    if notice.get("source") == "etri_ebid_progress":
+        from src.services.etri_ebid_service import fetch_etri_notice_materials
+
+        bid_no = str(notice.get("pblanc_id") or "").strip()
+        if bid_no:
+            materials = fetch_etri_notice_materials(bid_no, timeout=timeout)
+            return str(materials.get("detail_text") or "")
+
     url = str(notice.get("url") or "").strip()
     if not url:
         return ""

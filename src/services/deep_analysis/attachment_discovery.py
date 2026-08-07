@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.contracts.notice import Notice
+from src.services.etri_ebid_service import fetch_etri_notice_materials
 from src.services.detail_fetch_service import DEFAULT_HEADERS, extract_readable_text
 
 
@@ -19,6 +20,11 @@ JS_ARG_PATTERN = re.compile(r"""['"]([^'"]*)['"]|([^,\s][^,]*)""")
 
 
 def discover_notice_materials(notice: Notice, timeout: int = 15) -> dict[str, object]:
+    if notice.get("source") == "etri_ebid_progress":
+        bid_no = str(notice.get("pblanc_id") or "").strip()
+        if bid_no:
+            return fetch_etri_notice_materials(bid_no, timeout=timeout)
+
     detail_url = str(notice.get("url") or "").strip()
     html = ""
     detail_text = ""
