@@ -7,6 +7,7 @@ from urllib import request
 import json
 from collections import Counter
 from datetime import date
+from urllib.parse import urljoin
 
 from src.contracts.notice import MarkRecord, Notice
 
@@ -46,7 +47,7 @@ def build_daily_scraping_message(
             url = str(notice.get("url") or "").strip()
             deadline = _display_deadline(notice)
             day_label = _posted_day_label(notice, start_date=start_date, end_date=end_date)
-            title_text = _chat_link(url, title)
+            title_text = _chat_link(_absolute_url(url, site_url), title)
             lines.append(f"{day_label}{title_text} [마감일: {deadline}]")
     else:
         lines.append("- 신규 공고 없음")
@@ -65,7 +66,7 @@ def build_daily_scraping_message(
             title = str(record.get("title") or "제목 없음").strip()
             url = str(record.get("url") or "").strip()
             suffix = "가" if title.endswith("공고") else " 공고가"
-            lines.append(f"- {_chat_link(url, title)}{suffix} 신규 북마크로 추가되었습니다. 확인 바랍니다.")
+            lines.append(f"- {_chat_link(_absolute_url(url, site_url), title)}{suffix} 신규 북마크로 추가되었습니다. 확인 바랍니다.")
     else:
         lines.append("신규 북마크 없음")
     lines.append(f"총 북마크 {total_mark_count}건")
@@ -145,6 +146,20 @@ def _chat_link(url: str | None, label: str) -> str:
     if not clean_url:
         return clean_label
     return f"<{clean_url}|{clean_label}>"
+
+
+def _absolute_url(url: str | None, site_url: str | None) -> str | None:
+    clean_url = str(url or "").strip()
+    if not clean_url:
+        return None
+    if clean_url.lower().startswith(("http://", "https://")):
+        return clean_url
+
+    clean_site_url = str(site_url or "").strip()
+    if clean_url.startswith("/") and clean_site_url:
+        return urljoin(clean_site_url.rstrip("/") + "/", clean_url.lstrip("/"))
+
+    return clean_url
 
 
 def send_google_chat_message(webhook_url: str, text: str) -> None:

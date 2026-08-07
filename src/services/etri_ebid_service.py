@@ -92,6 +92,28 @@ def fetch_etri_notice_materials(bid_no: str, timeout: int = 20) -> dict[str, obj
     }
 
 
+def extract_etri_posted_at(html: str) -> str | None:
+    return _extract_labeled_date(html, "공고일시")
+
+
+def extract_etri_budget_text(html: str) -> str | None:
+    soup = BeautifulSoup(html, "html.parser")
+    for label in soup.find_all(["td", "th"]):
+        label_text = _normalize_text(label.get_text(" ", strip=True))
+        if "추정금액" not in label_text:
+            continue
+
+        value_cell = label.find_next_sibling(["td", "th"])
+        if value_cell is None:
+            continue
+
+        value = _normalize_text(value_cell.get_text(" ", strip=True))
+        if value and value != "원":
+            return value
+
+    return None
+
+
 def get_etri_session() -> requests.Session:
     session = make_session()
     initialize_public_session(session)
@@ -190,6 +212,42 @@ def _payload_value(payload: list[tuple[str, str]], key: str) -> str:
 def _html_title(html: str) -> str:
     title = BeautifulSoup(html, "html.parser").select_one("title")
     return title.get_text(" ", strip=True) if title else ""
+
+
+def _extract_labeled_date(html: str, label_name: str) -> str | None:
+    soup = BeautifulSoup(html, "html.parser")
+    for label in soup.find_all(["td", "th"]):
+        if _normalize_text(label.get_text(" ", strip=True)) != label_name:
+            continue
+
+        value_cell = label.find_next_sibling(["td", "th"])
+        if value_cell is None:
+            continue
+
+        parsed = _parse_korean_or_iso_date(value_cell.get_text(" ", strip=True))
+        if parsed:
+            return parsed
+
+    return None
+
+
+def _parse_korean_or_iso_date(value: str) -> str | None:
+    text = _normalize_text(value)
+    korean_match = re.search(r"(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일", text)
+    if korean_match:
+        year, month, day = korean_match.groups()
+        return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+
+    iso_match = re.search(r"(\d{4})[.-](\d{1,2})[.-](\d{1,2})", text)
+    if iso_match:
+        year, month, day = iso_match.groups()
+        return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+
+    return None
+
+
+def _normalize_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value.replace("\xa0", " ")).strip()
 
 
 def _rewrite_relative_links(html: str, base_url: str) -> str:

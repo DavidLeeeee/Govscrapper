@@ -137,6 +137,11 @@ def notice_key(notice: Notice) -> tuple[str, str, str]:
     if source == "nia" and title and posted_at:
         return source, title, posted_at
 
+    if source == "etri_ebid_progress":
+        pblanc_id = str(notice.get("pblanc_id") or "")
+        if pblanc_id:
+            return source, "pblanc_id", pblanc_id
+
     url = str(notice.get("url", ""))
     if url:
         return source, "url", url

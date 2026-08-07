@@ -28,6 +28,8 @@
 - 서버 백그라운드 로그 확인: `tail -f logs/server.log`
 - 서버 백그라운드 프로세스 확인: `ps aux | grep "python app.py"` or `ss -ltnp | grep 5090`
 - 서버 백그라운드 중지: `pkill -f "python app.py"`
+- systemd 서버 재시작: `sudo systemctl restart govscraper`
+- systemd 서버 상태 확인: `sudo systemctl status govscraper`
 
 - 오늘 공고 스크래핑 실행: `uv run python scripts/run_scraping.py`
 - 기간 공고 스크래핑 실행: `uv run python scripts/run_scraping.py --start-date 2026-05-22 --end-date 2026-05-29`

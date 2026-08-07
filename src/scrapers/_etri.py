@@ -435,34 +435,63 @@ def parse_max_page(html: str) -> int:
 def _to_notices(items: list[EtriBidNotice], scraped_at: str) -> list[Notice]:
     notices: list[Notice] = []
     for item in items:
-        posted_at = _extract_date(item.bid_start_at)
+        detail_metadata = _fetch_detail_metadata(item.bid_no)
+        posted_at = detail_metadata.get("posted_at") or _extract_date(item.bid_start_at)
         if posted_at is None:
             continue
 
         deadline = _extract_date(item.bid_end_at)
-        notices.append(
-            {
-                "source": item.source,
-                "title": item.title,
-                "url": _build_bid_url(item.bid_no),
-                "posted_at": posted_at,
-                "deadline": deadline,
-                "scraped_at": scraped_at,
-                "keywords": [],
-                "detail_points": _build_detail_points(item),
-                "application_period": _build_application_period(item.bid_start_at, item.bid_end_at),
-                "application_start_at": posted_at,
-                "application_end_at": deadline,
-                "department": item.manager,
-                "pblanc_id": item.bid_no,
-                "analysis": False,
-            }
-        )
+        notice: Notice = {
+            "source": item.source,
+            "title": item.title,
+            "url": _build_bid_url(item.bid_no),
+            "posted_at": posted_at,
+            "deadline": deadline,
+            "scraped_at": scraped_at,
+            "keywords": [],
+            "detail_points": _build_detail_points(item, posted_at=detail_metadata.get("posted_at")),
+            "application_period": _build_application_period(item.bid_start_at, item.bid_end_at),
+            "application_start_at": _extract_date(item.bid_start_at),
+            "application_end_at": deadline,
+            "department": item.manager,
+            "pblanc_id": item.bid_no,
+            "analysis": False,
+        }
+        if detail_metadata.get("budget_text"):
+            notice["budget_text"] = detail_metadata["budget_text"]
+        notices.append(notice)
     return notices
 
 
-def _build_detail_points(item: EtriBidNotice) -> list[str]:
+def _fetch_detail_metadata(bid_no: str) -> dict[str, str]:
+    try:
+        from src.services.etri_ebid_service import (
+            extract_etri_budget_text,
+            extract_etri_posted_at,
+            fetch_etri_detail_html,
+        )
+
+        html = fetch_etri_detail_html(bid_no)
+    except Exception as error:
+        _print_debug({"bid_no": bid_no, "detail_metadata_error": f"{type(error).__name__}: {error}"})
+        return {}
+
+    metadata: dict[str, str] = {}
+    posted_at = extract_etri_posted_at(html)
+    if posted_at:
+        metadata["posted_at"] = posted_at
+
+    budget_text = extract_etri_budget_text(html)
+    if budget_text:
+        metadata["budget_text"] = budget_text
+
+    return metadata
+
+
+def _build_detail_points(item: EtriBidNotice, posted_at: str | None = None) -> list[str]:
     points = [f"입찰공고번호: {item.bid_no}"]
+    if posted_at:
+        points.append(f"공고일시: {posted_at}")
     if item.contract_method:
         points.append(f"계약방법: {item.contract_method}")
     if item.bid_start_at:
