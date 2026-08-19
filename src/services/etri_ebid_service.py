@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 from src.scrapers._etri import (
     BASE_URL,
+    INITIAL_URLS,
     LIST_URL,
     extract_cs_signature,
     initialize_public_session,
@@ -28,6 +29,28 @@ DETAIL_URL_CANDIDATES = (
 
 def build_etri_original_url(bid_no: str) -> str:
     return f"/api/etri/original?{urlencode({'bid_no': bid_no})}"
+
+
+def build_etri_external_open_url(bid_no: str) -> str:
+    return f"/api/etri/open-external?{urlencode({'bid_no': bid_no})}"
+
+
+def build_etri_external_open_data(bid_no: str, timeout: int = 20) -> dict[str, object]:
+    session = make_session()
+    initialize_public_session(session)
+    cs_signature = _fetch_cs_signature(session, timeout=timeout)
+    if not cs_signature:
+        raise RuntimeError("ETRI csSignature is unavailable")
+
+    payload = _detail_payload(bid_no, cs_signature, "")
+    return {
+        "session_urls": list(INITIAL_URLS),
+        "action_url": DETAIL_URL_CANDIDATES[0],
+        "payload": [
+            {"name": name, "value": value}
+            for name, value in payload
+        ],
+    }
 
 
 def fetch_etri_detail_html(bid_no: str, timeout: int = 20) -> str:

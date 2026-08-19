@@ -1,7 +1,6 @@
 import asyncio
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -11,7 +10,13 @@ from src.services.deep_analysis.claude_deep_analyzer import ClaudeSDKDeepAnalyze
 from src.services.deep_analysis.contracts import DeepAnalyzer
 from src.services.deep_analysis.openai_deep_analyzer import OpenAIDeepAnalyzer
 from src.services.deep_analysis.service import analyze_notice, get_analysis
-from src.services.etri_ebid_service import debug_etri_detail_candidates, fetch_etri_detail_html
+from src.services.etri_ebid_service import (
+    build_etri_external_open_data,
+    build_etri_external_open_url,
+    build_etri_original_url,
+    debug_etri_detail_candidates,
+    fetch_etri_detail_html,
+)
 from src.services.notification_service import build_shared_notice_message, send_google_chat_message
 from src.services.marked_service import apply_marked_state, list_marked_notices, mark_notice, unmark_notice
 from src.services.storage_service import manually_expire_notice, merge_notices, notice_key_string, read_json_list, sort_notices
@@ -131,8 +136,23 @@ def _source_overrides(notice: dict[str, Any]) -> dict[str, Any]:
         return {}
 
     return {
-        "url": f"/api/etri/original?{urlencode({'bid_no': bid_no})}",
+        "url": build_etri_original_url(bid_no),
+        "external_url": build_etri_external_open_url(bid_no),
     }
+
+
+@router.get("/etri/open-external")
+async def open_etri_external(bid_no: str) -> dict[str, object]:
+    bid_no = bid_no.strip()
+    if not bid_no:
+        raise HTTPException(status_code=400, detail="bid_no is required")
+
+    try:
+        data = await asyncio.to_thread(build_etri_external_open_data, bid_no)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"ETRI external open failed: {exc}") from exc
+
+    return data
 
 
 @router.get("/etri/original", response_class=HTMLResponse)

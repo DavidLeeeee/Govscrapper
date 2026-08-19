@@ -1737,6 +1737,31 @@ body.modal-open {
   background: #1e40af;
 }
 
+.notice-proxy-link {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  align-self: center;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  color: #475569;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.notice-proxy-link:hover {
+  color: #1e293b;
+  background: #e2e8f0;
+}
+
+.notice-origin-link:disabled {
+  background: #64748b;
+  cursor: progress;
+}
+
 .notice-expire-button {
   background: #b42318;
 }

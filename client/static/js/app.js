@@ -1135,6 +1135,16 @@ function isFollowMatchedNotice(notice) {
 }
 
 document.addEventListener("click", async (event) => {
+  const etriOpenButton = event.target.closest("[data-etri-open-key]");
+  if (etriOpenButton) {
+    event.preventDefault();
+    const notice = findNoticeByKey(etriOpenButton.dataset.etriOpenKey);
+    if (notice && !etriOpenButton.disabled) {
+      await openEtriExternalNotice(notice, etriOpenButton);
+    }
+    return;
+  }
+
   const detailButton = event.target.closest("[data-detail-key]");
   if (detailButton) {
     event.preventDefault();
@@ -1343,7 +1353,12 @@ function renderNoticeDetail(notice) {
                     마감시키기
                   </button>`
             }
-            <a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>
+            ${
+              isEtriNotice(notice)
+                ? `<button class="notice-origin-link" type="button" data-etri-open-key="${escapeAttribute(noticeKey)}">ETRI 사이트에서 열기</button>
+                   <a class="notice-proxy-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">프록시 사이트로 열기</a>`
+                : `<a class="notice-origin-link" href="${escapeAttribute(notice.url)}" target="_blank" rel="noreferrer">원문 공고 열기</a>`
+            }
           </div>
           ${
             notice.expired
@@ -1365,6 +1380,99 @@ function renderNoticeDetail(notice) {
       </div>
     </div>
   `;
+}
+
+function isEtriNotice(notice) {
+  return notice.source === "etri_ebid_progress";
+}
+
+async function openEtriExternalNotice(notice, button) {
+  const popupName = `etri-external-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const popup = window.open("about:blank", popupName);
+  if (!popup) {
+    window.alert("ETRI 사이트를 열려면 팝업을 허용해주세요.");
+    return;
+  }
+
+  const previousLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = "ETRI 여는 중…";
+  popup.document.title = "ETRI 원문 공고 열기";
+  popup.document.body.textContent = "ETRI 연결 정보를 준비 중입니다.";
+
+  let form;
+  try {
+    if (!notice.external_url) {
+      throw new Error("ETRI external URL is missing");
+    }
+
+    const response = await fetch(notice.external_url, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const sessionUrls = Array.isArray(data.session_urls) ? data.session_urls.filter(isEtriSiteUrl) : [];
+    const actionUrl = isEtriSiteUrl(data.action_url) ? data.action_url : "";
+    const payload = Array.isArray(data.payload) ? data.payload : [];
+    if (sessionUrls.length === 0 || !actionUrl || payload.length === 0) {
+      throw new Error("Invalid ETRI external open data");
+    }
+
+    form = document.createElement("form");
+    form.method = "post";
+    form.action = actionUrl;
+    form.target = popupName;
+    form.hidden = true;
+
+    for (const field of payload) {
+      if (!field || typeof field.name !== "string") {
+        continue;
+      }
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = field.name;
+      input.value = String(field.value ?? "");
+      form.append(input);
+    }
+    document.body.append(form);
+
+    popup.location = sessionUrls[0];
+    sessionUrls.slice(1).forEach((url, index) => {
+      window.setTimeout(() => {
+        if (!popup.closed) {
+          popup.location = url;
+        }
+      }, (index + 1) * 1200);
+    });
+
+    window.setTimeout(() => {
+      if (!popup.closed) {
+        form.submit();
+      }
+      form.remove();
+      button.disabled = false;
+      button.textContent = previousLabel;
+    }, sessionUrls.length * 1200 + 800);
+  } catch {
+    form?.remove();
+    popup.close();
+    button.disabled = false;
+    button.textContent = previousLabel;
+    window.alert("ETRI 사이트를 열지 못했습니다. 프록시 사이트로 열기를 이용해주세요.");
+  }
+}
+
+function isEtriSiteUrl(value) {
+  try {
+    const url = new URL(String(value ?? ""));
+    return url.protocol === "https:" && url.hostname === "ebid.etri.re.kr";
+  } catch {
+    return false;
+  }
 }
 
 function buildFallbackSummary(notice) {
