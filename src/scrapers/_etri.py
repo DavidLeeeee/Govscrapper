@@ -19,6 +19,9 @@ from src.scrapers.SITES_INFO import ScrapeTarget
 
 BASE_URL = "https://ebid.etri.re.kr"
 LIST_URL = "https://ebid.etri.re.kr/ebid/ebid/ebidCustProgressList.do"
+# ETRI 화면에서 D를 선택하면 숨은 하위 항목 G/H도 함께 선택된다.
+TARGET_BID_BUSINESS_CODES = ("B", "D", "G", "H")
+TARGET_BID_BUSINESS_LIST = "/".join(TARGET_BID_BUSINESS_CODES) + "/"
 DATE_PATTERN = re.compile(r"\d{4}[.-]\d{2}[.-]\d{2}")
 DEBUG_DUMP_DIR = Path("runtime") / "debug" / "etri"
 INITIAL_URLS = (
@@ -210,7 +213,7 @@ def build_query_params(
             ("tabId", ""),
             ("biType", ""),
             ("pageGb", ""),
-            ("sch_biBizList", ""),
+            ("sch_biBizList", TARGET_BID_BUSINESS_LIST),
             ("search", "Y"),
             ("order", ""),
             ("sch_biNo", bid_no),
@@ -219,6 +222,7 @@ def build_query_params(
             ("sch_biState", bid_state),
             ("sch_fromDate", from_date),
             ("sch_toDate", to_date),
+            *(("sch_biBiz", code) for code in TARGET_BID_BUSINESS_CODES),
             ("sch_spotFromDate", ""),
             ("sch_spotToDate", ""),
             ("sch_enterFromDate", ""),
