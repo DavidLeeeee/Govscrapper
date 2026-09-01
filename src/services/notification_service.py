@@ -42,7 +42,7 @@ def build_daily_scraping_message(
 
     lines.append("*📍 신규 일반 공고*")
     if new_notices:
-        for notice in new_notices:
+        for notice in _order_notices_by_day(new_notices, start_date=start_date, end_date=end_date):
             title = str(notice.get("title") or "제목 없음").strip()
             url = str(notice.get("url") or "").strip()
             deadline = _display_deadline(notice)
@@ -54,9 +54,7 @@ def build_daily_scraping_message(
 
     lines.extend(["", "*📍 신규 지역 공고*"])
     if new_regional_notices:
-        region_counts = _count_regions(new_regional_notices)
-        summary = " / ".join(f"{region} {count}건" for region, count in region_counts.items())
-        lines.append(summary)
+        lines.extend(_regional_summary_lines(new_regional_notices, start_date=start_date, end_date=end_date))
     else:
         lines.append("신규 지역 공고 없음")
 
@@ -132,6 +130,55 @@ def _posted_day_label(notice: Notice, start_date: str | date | None, end_date: s
     if posted_at and yesterday and posted_at == yesterday:
         return "[어제] "
     return ""
+
+
+def _order_notices_by_day(
+    notices: list[Notice],
+    start_date: str | date | None,
+    end_date: str | date | None,
+) -> list[Notice]:
+    today = _date_text(end_date)
+    yesterday = _date_text(start_date)
+
+    def day_rank(notice: Notice) -> int:
+        posted_at = _date_text(notice.get("posted_at"))
+        if posted_at and today and posted_at == today:
+            return 0
+        if posted_at and yesterday and posted_at == yesterday:
+            return 1
+        return 2
+
+    return sorted(notices, key=day_rank)
+
+
+def _regional_summary_lines(
+    notices: list[Notice],
+    start_date: str | date | None,
+    end_date: str | date | None,
+) -> list[str]:
+    today = _date_text(end_date)
+    yesterday = _date_text(start_date)
+    labeled_dates = [(today, "[오늘]")]
+    if yesterday and yesterday != today:
+        labeled_dates.append((yesterday, "[어제]"))
+
+    lines: list[str] = []
+    recognized_dates = {day for day, _ in labeled_dates if day}
+    for day, label in labeled_dates:
+        day_notices = [notice for notice in notices if _date_text(notice.get("posted_at")) == day]
+        if day_notices:
+            lines.append(f"{label} {_region_summary(day_notices)}")
+
+    other_notices = [notice for notice in notices if _date_text(notice.get("posted_at")) not in recognized_dates]
+    if other_notices:
+        lines.append(_region_summary(other_notices))
+
+    return lines
+
+
+def _region_summary(notices: list[Notice]) -> str:
+    region_counts = _count_regions(notices)
+    return " / ".join(f"{region} {count}건" for region, count in region_counts.items())
 
 
 def _date_text(value: object) -> str:

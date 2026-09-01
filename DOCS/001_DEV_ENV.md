@@ -12,3 +12,4 @@
 - python-dotenv 1.2.2: .env 환경값 로딩
 - requests 2.34.2 이상: HTTP 요청 기반 스크래핑
 - beautifulsoup4 4.14.3 이상: HTML 파싱
+- holidays 0.103 이상: 대한민국 주말·공휴일 판정 및 Google Chat 알림 발송 제어

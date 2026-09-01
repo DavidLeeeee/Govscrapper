@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, TypedDict
 
 from src.contracts.notice import MarkRecord, Notice
+from src.services.business_day_service import korean_non_business_day_reason
 
 
 class AlarmPayload(TypedDict):
@@ -84,6 +85,29 @@ def build_alarm_payload(
         "new_mark_records": filter_mark_records_by_marked_at(mark_records, start_date, end_date),
         "total_mark_count": len(mark_records),
     }
+
+
+def daily_alarm_skip_reason(
+    notification_date: date,
+    notices: list[Notice],
+    regional_notices: list[Notice],
+) -> str | None:
+    non_business_day_reason = korean_non_business_day_reason(notification_date)
+    if non_business_day_reason:
+        return non_business_day_reason
+
+    if not has_notices_posted_on(notification_date, notices, regional_notices):
+        return "no_new_notices_today"
+
+    return None
+
+
+def has_notices_posted_on(target_date: date, *notice_groups: list[Notice]) -> bool:
+    return any(
+        _parse_date(notice.get("posted_at")) == target_date
+        for notices in notice_groups
+        for notice in notices
+    )
 
 
 def _parse_date(value: Any) -> date | None:

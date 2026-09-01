@@ -10,7 +10,12 @@ from src.contracts.notice import Notice
 from src.contracts.scrape_options import ScrapeOptions
 from src.scrapers._bizinfo_region import BizInfoRegionScraper
 from src.scrapers.registry import SCRAPERS
-from src.services.alarm_service import build_alarm_payload, read_alarm_payload, write_alarm_payload
+from src.services.alarm_service import (
+    build_alarm_payload,
+    daily_alarm_skip_reason,
+    read_alarm_payload,
+    write_alarm_payload,
+)
 from src.services.file_lock import file_lock
 from src.services.marked_service import list_marked_notices
 from src.services.notification_service import build_daily_scraping_message, send_google_chat_message
@@ -74,6 +79,24 @@ def main() -> None:
         alarm_payload = read_alarm_payload(settings.data_dir)
         if alarm_payload is None:
             raise RuntimeError("알림 JSON을 읽지 못했습니다.")
+
+        skip_reason = daily_alarm_skip_reason(
+            end_date,
+            alarm_payload["notices"],
+            alarm_payload["regional_notices"],
+        )
+        if skip_reason:
+            print(
+                {
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "alarm_notice_count": len(alarm_payload["notices"]),
+                    "alarm_regional_notice_count": len(alarm_payload["regional_notices"]),
+                    "chat_notified": False,
+                    "notification_skipped_reason": skip_reason,
+                }
+            )
+            return
 
         message = build_daily_scraping_message(
             alarm_payload["notices"],
