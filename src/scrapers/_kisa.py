@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import re
+import ssl
 import time
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter
 
 from src.contracts.notice import Notice
 from src.contracts.scrape_options import ScrapeOptions
@@ -15,8 +19,28 @@ from src.scrapers.SITES_INFO import ScrapeTarget
 
 BASE_URL = "https://www.kisa.or.kr"
 LIST_URL = "https://www.kisa.or.kr/403?page={page}"
+# Official issuer certificate: https://cacerts.digicert.com/GeoTrustTLSRSACAG1.crt.pem
+KISA_INTERMEDIATE_CA_PATH = (
+    Path(__file__).resolve().parents[2] / "certs" / "GeoTrustTLSRSACAG1.pem"
+)
 DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 DETAIL_LINK_PATTERN = re.compile(r"/403/form\?.*postSeq=\d+")
+
+
+class _KisaTlsAdapter(HTTPAdapter):
+    """KISA 응답에서 누락된 중간 인증서를 보완하고 TLS 검증을 유지한다."""
+
+    def init_poolmanager(
+        self,
+        connections: int,
+        maxsize: int,
+        block: bool = False,
+        **pool_kwargs: Any,
+    ) -> None:
+        ssl_context = ssl.create_default_context(cafile=requests.certs.where())
+        ssl_context.load_verify_locations(cafile=KISA_INTERMEDIATE_CA_PATH)
+        pool_kwargs["ssl_context"] = ssl_context
+        super().init_poolmanager(connections, maxsize, block=block, **pool_kwargs)
 
 
 class KisaBidScraper:
@@ -89,6 +113,7 @@ class KisaBidScraper:
 
 def _make_session() -> requests.Session:
     session = requests.Session()
+    session.mount(f"{BASE_URL}/", _KisaTlsAdapter())
     session.headers.update(
         {
             "User-Agent": (
